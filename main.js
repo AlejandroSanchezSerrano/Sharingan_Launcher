@@ -30,8 +30,8 @@ function createWindow() {
   });
 
   mainWindow.setMenuBarVisibility(false);
-  mainWindow.loadFile('dist/index.html');
-  mainWindow.webContents.openDevTools();
+  mainWindow.loadFile('distt/index.html');
+  // mainWindow.webContents.openDevTools();
 
   // Mostrar la ventana principal cuando esté lista
   mainWindow.once('ready-to-show', () => {
