@@ -1,0 +1,39 @@
+{
+    "inazuma": {
+      "emulador": "C:\\emuladores\\desmume\\desmume.exe",
+      "rom": "C:\\roms\\inazumaeleven.nds"
+    },
+    "inazuma2ve": {
+      "emulador": "C:\\emuladores\\desmume\\desmume.exe",
+      "rom": "C:\\roms\\inazumaeleven2ve.nds"
+    },
+    "inazuma2tf": {
+      "emulador": "C:\\emuladores\\desmume\\desmume.exe",
+      "rom": "C:\\roms\\inazumaeleven2tf.nds"
+    },
+    "inazuma3rc": {
+      "emulador": "C:\\emuladores\\citra\\citra-qt.exe",
+      "rom": "C:\\roms\\inazumaeleven3rc.nds"
+    },
+    "inazuma3fe": {
+      "emulador": "C:\\emuladores\\citra\\citra-qt.exe",
+      "rom": "C:\\roms\\inazumaeleven3fe.nds"
+    },
+    "inazuma3ao": {
+      "emulador": "C:\\emuladores\\citra\\citra-qt.exe",
+      "rom": "C:\\roms\\inazumaeleven3ao.nds"
+    },
+    "pokemon_r": {
+      "emulador": "C:\\emuladores\\bgp\\bgp.exe",
+      "rom": "C:\\roms\\pokemon_r.gb"
+    },
+    "pokemon_b": {
+      "emulador": "C:\\emuladores\\bgp\\bgp.exe",
+      "rom": "C:\\roms\\pokemon_b.gb"
+    },
+    "pokemon_y": {
+      "emulador": "C:\\emuladores\\bgp\\bgp.exe",
+      "rom": "C:\\roms\\pokemon_b.gb"
+    }
+  }
+  

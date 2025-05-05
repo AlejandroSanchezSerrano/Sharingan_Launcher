@@ -1,9 +1,20 @@
 const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
+const fs = require('fs');
 const { spawn } = require('child_process');
 
 let mainWindow;
 let splash;
+
+// Cargar configuración de juegos desde games.json
+const gamesPath = path.join(__dirname, 'games.json');
+let juegos = {};
+
+try {
+  juegos = JSON.parse(fs.readFileSync(gamesPath, 'utf8'));
+} catch (err) {
+  console.error("Error al cargar games.json:", err);
+}
 
 function createWindow() {
   // Crear splash screen
@@ -18,7 +29,7 @@ function createWindow() {
   });
   splash.loadFile('splash.html');
 
-  // Crear ventana principal, pero aún no mostrarla
+  // Crear ventana principal
   mainWindow = new BrowserWindow({
     width: 1000,
     height: 700,
@@ -31,34 +42,42 @@ function createWindow() {
 
   mainWindow.setMenuBarVisibility(false);
   mainWindow.loadFile('distt/index.html');
-  // mainWindow.webContents.openDevTools();
+  mainWindow.webContents.openDevTools(); // Quitar para producción
 
-  // Mostrar la ventana principal cuando esté lista
   mainWindow.once('ready-to-show', () => {
     setTimeout(() => {
       splash.close();
       mainWindow.maximize();
       mainWindow.show();
-    }, 2500); // simula un "loading" de 1.5s
+    }, 2500);
   });
 }
 
-// Lanzar juegos desde preload
-ipcMain.on('launch-game', (event, relativePath) => {
-  const fullPath = path.join(__dirname, relativePath);
+// Lanzar juegos directamente desde configuración
+ipcMain.handle('launch-game', async (event, gameKey) => {
+  const juego = juegos[gameKey];
+  if (!juego) {
+    console.error(`Juego no encontrado: ${gameKey}`);
+    return;
+  }
+
+  const { emulador, rom } = juego;
+
+  console.log(`Lanzando: ${emulador} ${rom}`);
 
   try {
-    spawn(fullPath, {
+    spawn(emulador, [rom], {
       shell: true,
       detached: true,
       stdio: 'ignore',
     }).unref();
   } catch (error) {
-    console.error('Error al lanzar juego:', error);
+    console.error(`Error al lanzar ${gameKey}:`, error);
   }
 });
 
 app.whenReady().then(createWindow);
+
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit();
 });
