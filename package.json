@@ -1,14 +1,35 @@
 {
   "name": "sharingan_launcher",
   "version": "1.0.0",
+  "description": "Lanzador de juegos local con estilo anime.",
   "main": "main.js",
   "scripts": {
-    "start": "electron ."
-  },
-  "devDependencies": {
-    "electron-builder": "^26.0.12"
+    "start": "electron .",
+    "build": "electron-builder"
   },
   "dependencies": {
-    "electron": "^36.1.0"
+  },
+  "devDependencies": {
+    "electron": "^36.1.0",
+    "electron-builder": "^26.0.12"
+  },
+  "build": {
+    "appId": "com.sharingan.launcher",
+    "productName": "Sharingan_Launcher",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "**/*"
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "build/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    }
   }
 }
