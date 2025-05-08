@@ -1,7 +1,7 @@
 {
-  "name": "sharingan_launcher",
+  "name": "sharinganlauncher",
   "version": "1.0.0",
-  "description": "Lanzador de juegos local con estilo anime.",
+  "description": "Sono Sharingan",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
@@ -14,7 +14,7 @@
   },
   "build": {
     "appId": "com.sharingan.launcher",
-    "productName": "Sharingan_Launcher",
+    "productName": "Sharingan Launcher",
     "directories": {
       "output": "dist",
       "buildResources": "build"

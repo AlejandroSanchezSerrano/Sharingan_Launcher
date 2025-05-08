@@ -13,27 +13,127 @@
     },
     "inazuma3rc": {
       "emulador": "C:\\emuladores\\citra\\citra-qt.exe",
-      "rom": "C:\\roms\\inazumaeleven3rc.nds"
+      "rom": "C:\\roms\\inazumaeleven3rc.3ds"
     },
     "inazuma3fe": {
       "emulador": "C:\\emuladores\\citra\\citra-qt.exe",
-      "rom": "C:\\roms\\inazumaeleven3fe.nds"
+      "rom": "C:\\roms\\inazumaeleven3fe.3ds"
     },
     "inazuma3ao": {
       "emulador": "C:\\emuladores\\citra\\citra-qt.exe",
-      "rom": "C:\\roms\\inazumaeleven3ao.nds"
+      "rom": "C:\\roms\\inazumaeleven3ao.3ds"
     },
-    "pokemon_r": {
-      "emulador": "C:\\emuladores\\bgp\\bgp.exe",
-      "rom": "C:\\roms\\pokemon_r.gb"
+    "pokemon_rojo": {
+      "emulador": "C:\\emuladores\\mgba\\mgba.exe",
+      "rom": "C:\\roms\\pokemon_rojo.gb"
     },
-    "pokemon_b": {
-      "emulador": "C:\\emuladores\\bgp\\bgp.exe",
-      "rom": "C:\\roms\\pokemon_b.gb"
+    "pokemon_azul": {
+      "emulador": "C:\\emuladores\\mgba\\mgba.exe",
+      "rom": "C:\\roms\\pokemon_azul.gb"
+    },
+    "pokemon_amarillo": {
+      "emulador": "C:\\emuladores\\mgba\\mgba.exe",
+      "rom": "C:\\roms\\pokemon_amarillo.gbc"
+    },
+    "pokemon_rojofuego": {
+      "emulador": "C:\\emuladores\\mgba\\mgba.exe",
+      "rom": "C:\\roms\\pokemon_rojofuego.gba"
+    },
+    "pokemon_verdehoja": {
+      "emulador": "C:\\emuladores\\mgba\\mgba.exe",
+      "rom": "C:\\roms\\pokemon_verdehoja.gba"
+    },
+    "pokemon_oro": {
+      "emulador": "C:\\emuladores\\mgba\\mgba.exe",
+      "rom": "C:\\roms\\pokemon_oro.gbc"
+    },
+    "pokemon_plata": {
+      "emulador": "C:\\emuladores\\mgba\\mgba.exe",
+      "rom": "C:\\roms\\pokemon_plata.gbc"
+    },
+    "pokemon_cristal": {
+      "emulador": "C:\\emuladores\\mgba\\mgba.exe",
+      "rom": "C:\\roms\\pokemon_cristal.gbc"
+    },
+    "pokemon_oro_heartgold": {
+      "emulador": "C:\\emuladores\\desmume\\desmume.exe",
+      "rom": "C:\\roms\\pokemon_oro_heartgold.nds"
+    },
+    "pokemon_plata_soulsilver": {
+      "emulador": "C:\\emuladores\\desmume\\desmume.exe",
+      "rom": "C:\\roms\\pokemon_plata_soulsilver.nds"
+    },
+    "pokemon_rubi": {
+      "emulador": "C:\\emuladores\\mgba\\mgba.exe",
+      "rom": "C:\\roms\\pokemon_rubi.gba"
+    },
+    "pokemon_zafiro": {
+      "emulador": "C:\\emuladores\\mgba\\mgba.exe",
+      "rom": "C:\\roms\\pokemon_zafiro.gba"
+    },
+    "pokemon_esmeralda": {
+      "emulador": "C:\\emuladores\\mgba\\mgba.exe",
+      "rom": "C:\\roms\\pokemon_esmeralda.gba"
+    },
+    "pokemon_rubiomega": {
+      "emulador": "C:\\emuladores\\citra\\citra-qt.exe",
+      "rom": "C:\\roms\\pokemon_rubiomega.3ds"
+    },
+    "pokemon_zafiroalfa": {
+      "emulador": "C:\\emuladores\\citra\\citra-qt.exe",
+      "rom": "C:\\roms\\pokemon_zafiroalfa.3ds"
+    },
+    "pokemon_diamante": {
+      "emulador": "C:\\emuladores\\desmume\\desmume.exe",
+      "rom": "C:\\roms\\pokemon_diamante.nds"
+    },
+    "pokemon_perla": {
+      "emulador": "C:\\emuladores\\desmume\\desmume.exe",
+      "rom": "C:\\roms\\pokemon_perla.nds"
+    },
+    "pokemon_platino": {
+      "emulador": "C:\\emuladores\\desmume\\desmume.exe",
+      "rom": "C:\\roms\\pokemon_platino.nds"
+    },
+    "pokemon_negro": {
+      "emulador": "C:\\emuladores\\desmume\\desmume.exe",
+      "rom": "C:\\roms\\pokemon_negro.nds"
+    },
+    "pokemon_blanco": {
+      "emulador": "C:\\emuladores\\desmume\\desmume.exe",
+      "rom": "C:\\roms\\pokemon_blanco.nds"
+    },
+    "pokemon_negro2": {
+      "emulador": "C:\\emuladores\\desmume\\desmume.exe",
+      "rom": "C:\\roms\\pokemon_negro2.nds"
+    },
+    "pokemon_blanco2": {
+      "emulador": "C:\\emuladores\\desmume\\desmume.exe",
+      "rom": "C:\\roms\\pokemon_blanco2.nds"
+    },
+    "pokemon_x": {
+      "emulador": "C:\\emuladores\\citra\\citra-qt.exe",
+      "rom": "C:\\roms\\pokemon_x.3ds"
     },
     "pokemon_y": {
-      "emulador": "C:\\emuladores\\bgp\\bgp.exe",
-      "rom": "C:\\roms\\pokemon_b.gb"
+      "emulador": "C:\\emuladores\\citra\\citra-qt.exe",
+      "rom": "C:\\roms\\pokemon_y.3ds"
+    },
+    "pokemon_sol": {
+      "emulador": "C:\\emuladores\\citra\\citra-qt.exe",
+      "rom": "C:\\roms\\pokemon_sol.3ds"
+    },
+    "pokemon_ultrasol": {
+      "emulador": "C:\\emuladores\\citra\\citra-qt.exe",
+      "rom": "C:\\roms\\pokemon_ultrasol.3ds"
+    },
+    "pokemon_luna": {
+      "emulador": "C:\\emuladores\\citra\\citra-qt.exe",
+      "rom": "C:\\roms\\pokemon_luna.3ds"
+    },
+    "pokemon_ultraluna": {
+      "emulador": "C:\\emuladores\\citra\\citra-qt.exe",
+      "rom": "C:\\roms\\pokemon_ultraluna.3ds"
     }
   }
   

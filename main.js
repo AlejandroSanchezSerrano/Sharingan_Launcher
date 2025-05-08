@@ -42,7 +42,7 @@ function createWindow() {
 
   mainWindow.setMenuBarVisibility(false);
   mainWindow.loadFile('distt/index.html');
-  mainWindow.webContents.openDevTools(); // Quitar para producción
+  // mainWindow.webContents.openDevTools();
 
   mainWindow.once('ready-to-show', () => {
     setTimeout(() => {
