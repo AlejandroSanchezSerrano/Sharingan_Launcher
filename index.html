@@ -392,7 +392,8 @@
       try {
         const real = await window.electronAPI.getRealRequirements({ 
           igdbId: id, 
-          steamAppId: game.steamAppId 
+          steamAppId: game.steamAppId,
+          gameName: game.name
         });
         if (real) reqs = real;
       } catch (err) { console.error(err); }

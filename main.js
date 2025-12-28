@@ -1,4 +1,5 @@
 const { app, BrowserWindow, ipcMain, dialog, shell } = require("electron");
+const Fuse = require('fuse.js');
 const path = require("path");
 const { execFile } = require("child_process");
 const fs = require("fs");
@@ -518,7 +519,7 @@ ipcMain.handle("games:importInstalled", async (_e, config) => {
           const fields = parseAcfRootFields(acf);
           if (!fields.appid) continue;
 
-          const appid = Number(fields.appid); 
+          const appid = Number(fields.appid);
 
           const blacklistAppIds = new Set([
             431960, // Wallpaper Engine
@@ -593,7 +594,7 @@ ipcMain.handle("games:importInstalled", async (_e, config) => {
     if (exists(launcherInstalledDat)) {
       try {
         launcherInstalled = JSON.parse(safeReadText(launcherInstalledDat));
-      } catch {}
+      } catch { }
     }
 
     if (exists(epicManifestsDir)) {
@@ -819,7 +820,7 @@ ipcMain.handle('games:enrichCovers', async (_e, opts = {}) => {
         x =>
           x?.cover?.image_id &&
           (normSearch(x.name).startsWith(targetNorm) ||
-           targetNorm.startsWith(normSearch(x.name)))
+            targetNorm.startsWith(normSearch(x.name)))
       );
     }
 
@@ -833,7 +834,7 @@ ipcMain.handle('games:enrichCovers', async (_e, opts = {}) => {
       g.coverUrl = `https://images.igdb.com/igdb/image/upload/t_cover_big/${hit.cover.image_id}.jpg`;
       updated++;
       console.log('[enrichCovers] match para', originalName, '=>', hit.name);
-    } 
+    }
 
     await sleep(250);
   }
@@ -848,7 +849,7 @@ ipcMain.handle('games:enrichCovers', async (_e, opts = {}) => {
 ipcMain.handle("games:togglePlatinum", (_e, id) => {
   const gameId = Number(id);
   const g = completedGames.find((x) => x.id === gameId);
-  
+
   if (g) {
     g.isPlatinum = !g.isPlatinum;
     saveData();
@@ -886,51 +887,187 @@ ipcMain.handle('igdb:getDetails', async (_e, id) => {
   `);
 });
 
-// -------------------- Steam Store API (Requisitos Reales) --------------------
-function stripHtml(html) {
-  if (!html) return "No especificado";
-  let text = html
-    .replace(/<br\s*\/?>/gi, "\n") // br a salto
-    .replace(/<li>/gi, "• ")       // li a punto de lista
-    .replace(/<\/li>/gi, "\n")     // cierre li
-    .replace(/<[^>]+>/g, "");      // borrar resto de etiquetas
-  
-  return text.split('\n').map(l => l.trim()).filter(l => l).join('\n');
+// -------------------- Steam StoreService AppList (replacement) --------------------
+// IMPORTANTE: NO hardcodees la key. Ponla en variable de entorno: STEAM_WEB_API_KEY
+const STEAM_WEB_API_KEY = "7E2A25850DBC44A53C9E6841CBFC7A58";
+
+// Cache in-memory + cache en disco
+const steamAppListCachePath = path.join(app.getPath("userData"), "steam_applist_games.json");
+let steamAppListCache = null;
+
+function safeReadJson(p) {
+  try {
+    if (!fs.existsSync(p)) return null;
+    return JSON.parse(fs.readFileSync(p, "utf8"));
+  } catch {
+    return null;
+  }
 }
 
-ipcMain.handle('steam:getRequirements', async (_e, { igdbId, steamAppId }) => {
+function safeWriteJson(p, obj) {
+  try {
+    fs.writeFileSync(p, JSON.stringify(obj, null, 2), "utf8");
+  } catch (e) {
+    console.error("[SteamAppList] Error writing cache file", e);
+  }
+}
+
+// Descarga TODA la lista usando paginación (last_appid + max_results) desde IStoreService/GetAppList. [web:38]
+async function fetchSteamAppListAllGames() {
+  if (!STEAM_WEB_API_KEY) throw new Error("Falta STEAM_WEB_API_KEY (variable de entorno).");
+
+  const all = [];
+  let lastAppId = 0;
+
+  while (true) {
+    const qs = new URLSearchParams({
+      key: STEAM_WEB_API_KEY,
+      include_games: "true",
+      include_dlc: "false",
+      include_software: "false",
+      include_videos: "false",
+      include_hardware: "false",
+      max_results: "50000",
+      last_appid: String(lastAppId),
+    });
+
+    const url = `https://api.steampowered.com/IStoreService/GetAppList/v1/?${qs.toString()}`;
+    const r = await fetch(url, { headers: { "User-Agent": "Mozilla/5.0" } });
+
+    if (!r.ok) {
+      const text = await r.text().catch(() => "");
+      throw new Error(`Steam StoreService error: ${r.status} ${r.statusText} ${text}`.trim());
+    }
+
+    const j = await r.json();
+    const apps = j?.response?.apps || [];
+
+    if (!Array.isArray(apps) || apps.length === 0) break;
+
+    all.push(...apps);
+
+    // siguiente página
+    lastAppId = apps[apps.length - 1].appid;
+
+    if (apps.length < 50000) break;
+
+    await sleep(250);
+  }
+
+  return all;
+}
+
+async function getSteamAppListCached() {
+  // 1) RAM
+  if (steamAppListCache && steamAppListCache.length) return steamAppListCache;
+
+  // 2) Disco
+  const fromDisk = safeReadJson(steamAppListCachePath);
+  if (fromDisk?.apps && Array.isArray(fromDisk.apps) && fromDisk.apps.length) {
+    steamAppListCache = fromDisk.apps;
+    console.log(`[SteamAppList] Cargada cache desde disco: ${steamAppListCache.length}`);
+    return steamAppListCache;
+  }
+
+  // 3) Descargar
+  console.log("[SteamAppList] Descargando lista (IStoreService/GetAppList)...");
+  steamAppListCache = await fetchSteamAppListAllGames();
+  console.log(`[SteamAppList] Descargada: ${steamAppListCache.length}`);
+
+  safeWriteJson(steamAppListCachePath, {
+    updatedAt: new Date().toISOString(),
+    apps: steamAppListCache,
+  });
+
+  return steamAppListCache;
+}
+
+// Helper para limpiar HTML que viene en pc_requirements de store.steampowered.com/api/appdetails
+function stripHtml(html) {
+  if (!html) return "No especificado";
+
+  const text = String(html)
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<li>/gi, "• ")
+    .replace(/<\/li>/gi, "\n")
+    .replace(/<[^>]+>/g, "");
+
+  return text
+    .split("\n")
+    .map(l => l.trim())
+    .filter(Boolean)
+    .join("\n");
+}
+
+ipcMain.handle('steam:getRequirements', async (_e, { igdbId, steamAppId, gameName }) => {
   let targetSteamId = steamAppId;
 
-  // 1. Preguntar a IGDB por el Steam ID si no lo tenemos
+  console.log(`[Reqs] Buscando para: "${gameName}" (IGDB: ${igdbId})`);
+
+  // 1. INTENTO A: IGDB external_games
   if (!targetSteamId && igdbId) {
     try {
       const res = await igdbGamesQuery(`
         fields uid; 
         where game = ${igdbId} & category = 1; 
         limit 1;
-      `, "external_games"); // Endpoint específico para enlaces externos
-      
+      `, "external_games");
+
       if (res && res.length > 0) {
         targetSteamId = res[0].uid;
+        console.log(`[Reqs] ID encontrado vía IGDB: ${targetSteamId}`);
       }
     } catch (e) {
-      console.error("Error buscando Steam ID en IGDB", e);
+      console.error("[Reqs] Error IGDB external_games", e);
     }
   }
 
-  if (!targetSteamId) return null;
+  // 2. INTENTO B: Búsqueda FUZZY en lista completa (StoreService)
+  if (!targetSteamId && gameName) {
+    console.log(`[Reqs] ID no encontrado en IGDB. Buscando "${gameName}" en Steam AppList (StoreService)...`);
 
-  // 2. Consultar API Tienda Steam
+    try {
+      const appList = await getSteamAppListCached();
+
+      const options = {
+        keys: ["name"],
+        threshold: 0.2,
+        distance: 100,
+      };
+
+      const fuse = new Fuse(appList, options);
+      const results = fuse.search(gameName);
+
+      if (results.length > 0) {
+        const best = results[0].item;
+        targetSteamId = best.appid;
+        console.log(`[Reqs] ¡Encontrado con Fuse! "${gameName}" ~ "${best.name}" (ID: ${targetSteamId})`);
+      } else {
+        console.log(`[Reqs] No se encontró coincidencia cercana para "${gameName}"`);
+      }
+    } catch (e) {
+      console.error("[Reqs] Error en búsqueda Steam (StoreService)", e);
+    }
+  }
+
+  // 3. Descargar requisitos de la tienda
   try {
     const steamUrl = `https://store.steampowered.com/api/appdetails?appids=${targetSteamId}&l=spanish`;
-    const response = await fetch(steamUrl);
+
+    // AÑADIMOS HEADERS AQUÍ TAMBIÉN
+    const response = await fetch(steamUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+      }
+    });
     const json = await response.json();
-    
+
     const appData = json[targetSteamId];
 
     if (appData && appData.success && appData.data) {
       const pcReqs = appData.data.pc_requirements;
-      
+
+      // A veces viene vacio []
       if (!pcReqs || Array.isArray(pcReqs)) return null;
 
       return {
@@ -939,7 +1076,7 @@ ipcMain.handle('steam:getRequirements', async (_e, { igdbId, steamAppId }) => {
       };
     }
   } catch (e) {
-    console.error("Error conectando con Steam Store", e);
+    console.error("[Reqs] Error fetching store details", e);
   }
 
   return null;
