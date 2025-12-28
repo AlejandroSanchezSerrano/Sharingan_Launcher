@@ -161,7 +161,8 @@ input[type="text"]:focus {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
-  margin-top: auto; 
+  margin-top: auto;
+  align-items: center; /* Alineación vertical */
 }
 
 button {
@@ -460,28 +461,13 @@ button:hover {
   grid-column: 1 / -1;
 }
 
-/* si usas .cards-grid con display:grid, asegúrate de que .empty-state
-   esté dentro de ese contenedor para que esto funcione */
-
-.empty-title {
-  font-size: 18px;
-  font-weight: 600;
-  margin-bottom: 8px;
-}
-
-.empty-text {
-  font-size: 14px;
-  opacity: 0.8;
-  margin-bottom: 16px;
-}
-
 /* Importar */
 /* Popup del import */
 .import-popup {
   font-size: 14px; /* tamaño base del popup */
 }
 
-/* Botones "Seleccionar..." que creas dentro del HTML (id pickSteam, etc.) */
+/* Botones "Seleccionar..." */
 .import-popup #pickSteam,
 .import-popup #pickEpic,
 .import-popup #pickGog,
@@ -509,4 +495,44 @@ button:hover {
   outline: 2px solid #5660ff;
   box-shadow: 0 0 0 3px rgba(86, 96, 255, 0.25), 0 15px 35px rgba(0, 0, 0, 0.65);
   transform: translateY(-3px);
+}
+
+/* --- Dropdown Menu --- */
+.action-menu {
+  position: relative;
+  display: inline-block;
+  margin-left: auto; 
+}
+
+.dropdown-content {
+  display: none;
+  position: absolute;
+  bottom: 100%;
+  right: 0; 
+  background-color: #2b2b2b;
+  min-width: 180px;
+  box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.6);
+  z-index: 100;
+  border-radius: 6px;
+  border: 1px solid #444;
+  padding: 5px 0;
+  margin-bottom: 5px;
+}
+
+.dropdown-content.show {
+  display: block;
+}
+
+.dropdown-item {
+  padding: 10px 15px;
+  cursor: pointer;
+  color: #e0e0e0;
+  text-align: left;
+  font-size: 0.9rem;
+  transition: background 0.2s;
+}
+
+.dropdown-item:hover {
+  background-color: #3d3d3d;
+  color: #fff;
 }

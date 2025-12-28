@@ -73,6 +73,7 @@
     let currentSearchGames = [];
     let showOnlyLinked = false;
     let libraryGamesCache = [];
+    let dartacanPlayed = false;
 
     // Gamepad state
     let activePadIndex = null;
@@ -144,6 +145,13 @@
       setupGamepad();
     });
 
+    // Cerrar dropdowns al hacer click fuera
+    window.addEventListener('click', (e) => {
+      if (!e.target.matches('.more-btn')) {
+        document.querySelectorAll('.dropdown-content').forEach(d => d.classList.remove('show'));
+      }
+    });
+
     // ===============================
     // Populares / búsqueda IGDB
     // ===============================
@@ -166,7 +174,6 @@
           }
         }
       } else {
-        // Si deja de ser "dartacan", permite que vuelva a sonar si lo escriben otra vez
         dartacanPlayed = false;
       }
       clearTimeout(lastSearchTimeout);
@@ -340,6 +347,17 @@
       }
     }
 
+    function toggleDropdown(e, id) {
+      e.stopPropagation();
+      // Cerrar otros dropdowns abiertos
+      document.querySelectorAll('.dropdown-content').forEach(d => {
+        if (d.id !== `dropdown-${id}`) d.classList.remove('show');
+      });
+      
+      const el = document.getElementById(`dropdown-${id}`);
+      if (el) el.classList.toggle('show');
+    }
+
     // ===============================
     // Pintar cards reutilizable
     // ===============================
@@ -408,12 +426,18 @@
             : `<button onclick="setExecutable('${game.id}')">Vincular</button>`;
           const playButton = hasExe ? `<button class="primary" onclick="launchGame('${game.id}')">Jugar</button>` : '';
 
+          // Dropdown para biblioteca
           buttonsHtml = `
             ${exeStatus}
             ${playButton}
-            <button onclick="markCompleted('${game.id}')">Marcar como pasado</button>
-            <button onclick="removeFromLibrary('${game.id}')">Quitar de biblioteca</button>
-            <button class="more-btn" onclick="openSortKeyEditor('${game.id}')">⋯</button>
+            <div class="action-menu">
+              <button class="more-btn" onclick="toggleDropdown(event, '${game.id}')">⋯</button>
+              <div id="dropdown-${game.id}" class="dropdown-content">
+                 <div class="dropdown-item" onclick="markCompleted('${game.id}')">Marcar como pasado</div>
+                 <div class="dropdown-item" onclick="openSortKeyEditor('${game.id}')">Cambiar orden</div>
+                 <div class="dropdown-item" onclick="removeFromLibrary('${game.id}')" style="color: #ff6b6b;">Quitar de biblioteca</div>
+              </div>
+            </div>
           `;
         } else if (mode === "completed") {
           const hasExe = !!game.executable;
@@ -422,11 +446,18 @@
             : `<button onclick="setExecutable('${game.id}')">Vincular</button>`;
           const playButton = hasExe ? `<button class="primary" onclick="launchGame('${game.id}')">Jugar</button>` : '';
 
+          // Dropdown para completados
           buttonsHtml = `
             ${exeStatus}
             ${playButton}
-            <button onclick="returnToLibrary('${game.id}')">Quitar de pasados</button>
-            <button class="more-btn" onclick="openSortKeyEditor('${game.id}')">⋯</button>
+            <div class="action-menu">
+              <button class="more-btn" onclick="toggleDropdown(event, '${game.id}')">⋯</button>
+              <div id="dropdown-${game.id}" class="dropdown-content">
+                 <div class="dropdown-item" onclick="returnToLibrary('${game.id}')">Quitar de pasados</div>
+                 <div class="dropdown-item" onclick="openSortKeyEditor('${game.id}')">Cambiar orden</div>
+                 <div class="dropdown-item" onclick="removeFromLibrary('${game.id}')" style="color: #ff6b6b;">Quitar de biblioteca</div>
+              </div>
+            </div>
           `;
         }
 
@@ -498,11 +529,17 @@
     }
 
     async function openSortKeyEditor(id) {
-      const allGames = [...libraryGamesCache];
-      const game = allGames.find(g => String(g.id) === String(id));
+      // Buscar en caché global primero
+      let game = libraryGamesCache.find(g => String(g.id) === String(id));
+      
+      // Si no está, buscar en estado general (por si estamos en 'completados' y no están en cache de librería)
+      if(!game) {
+        const { games, completedGames } = await window.electronAPI.getGames();
+        game = games.find(g => String(g.id) === String(id)) || completedGames.find(g => String(g.id) === String(id));
+      }
 
       if (!game) {
-        showNotification('No se encontró el juego en la biblioteca.', 'error');
+        showNotification('No se encontró el juego.', 'error');
         return;
       }
 
@@ -784,14 +821,14 @@
       const gp = getPad();
 
       if (gp) {
-        // Standard mapping indices típicos. [web:29]
+        // Standard mapping indices típicos.
         const up = !!gp.buttons[12]?.pressed || (gp.axes?.[1] ?? 0) < -0.6;
         const down = !!gp.buttons[13]?.pressed || (gp.axes?.[1] ?? 0) > 0.6;
         const left = !!gp.buttons[14]?.pressed || (gp.axes?.[0] ?? 0) < -0.6;
         const right = !!gp.buttons[15]?.pressed || (gp.axes?.[0] ?? 0) > 0.6;
 
-        const a = !!gp.buttons[0]?.pressed; // A / Cross [web:29]
-        const b = !!gp.buttons[1]?.pressed; // B / Circle [web:29]
+        const a = !!gp.buttons[0]?.pressed; // A / Cross
+        const b = !!gp.buttons[1]?.pressed; // B / Circle
         const x = !!gp.buttons[2]?.pressed;
         const y = !!gp.buttons[3]?.pressed;
         const lb = !!gp.buttons[4]?.pressed;
