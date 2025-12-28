@@ -1,0 +1,39 @@
+{
+  "name": "sharingan-launcher",
+  "version": "1.0.0-beta",
+  "description": "Estas cansado de tener muchos juegos en diferentes launchers, simplificalo y unelos todos en uno, Sharingan Launcher.",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron main.js",
+    "dist": "electron-builder --win"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "devDependencies": {
+    "electron": "^39.2.7",
+    "electron-builder": "^24.13.3"
+  },
+  "dependencies": {
+    "node-fetch": "^2.7.0",
+    "ps-node": "^0.1.6",
+    "sweetalert2": "^11.26.13"
+  },
+  "build": {
+    "appId": "com.sharingan.launcher",
+    "productName": "Sharingan Launcher",
+    "asar": true,
+    "win": {
+      "target": [
+        "nsis"
+      ],
+      "icon": "assets/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true
+    }
+  }
+}
