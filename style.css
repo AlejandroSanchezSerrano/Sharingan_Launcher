@@ -123,6 +123,7 @@ input[type="text"]:focus {
 /* Card de juego */
 
 .game-card {
+  position: relative; 
   background: #0c0f18;
   border-radius: 10px;
   padding: 10px;
@@ -133,6 +134,7 @@ input[type="text"]:focus {
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.45);
   transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
   height: 100%; 
+  z-index: 1; 
 }
 
 .game-card:hover {
@@ -490,12 +492,13 @@ button:hover {
   padding: 10px 16px !important;
 }
 
-/* Gamepad focus */
+/* Gamepad focus 
 .game-card.gp-focused {
   outline: 2px solid #5660ff;
   box-shadow: 0 0 0 3px rgba(86, 96, 255, 0.25), 0 15px 35px rgba(0, 0, 0, 0.65);
   transform: translateY(-3px);
 }
+*/
 
 /* --- Dropdown Menu --- */
 .action-menu {
@@ -535,4 +538,51 @@ button:hover {
 .dropdown-item:hover {
   background-color: #3d3d3d;
   color: #fff;
+}
+
+/* --- Estilos Platino --- */
+/* Animación de respiración (Brillo y Borde) */
+@keyframes platinumBreath {
+  0% {
+    border-color: #ffd700;
+    box-shadow: 0 0 10px rgba(255, 215, 0, 0.3), 0 10px 25px rgba(0, 0, 0, 0.45);
+  }
+  50% {
+    border-color: #ffed8a; /* Un dorado más claro en el pico de respiración */
+    box-shadow: 0 0 25px rgba(255, 215, 0, 0.7), 0 10px 25px rgba(0, 0, 0, 0.45);
+  }
+  100% {
+    border-color: #ffd700;
+    box-shadow: 0 0 10px rgba(255, 215, 0, 0.3), 0 10px 25px rgba(0, 0, 0, 0.45);
+  }
+}
+
+/* Borde y resplandor dorado */
+.game-card.platinum-card {
+  border-width: 0.5px; /* Borde más gordo */
+  /* Aplicamos la animación: nombre, duración, curva de velocidad, infinito */
+  animation: platinumBreath 2s ease-in-out infinite;
+}
+
+/* Mantenemos el hover para el levantamiento, 
+   pero el brillo ya lo controla la animación */
+.game-card.platinum-card:hover {
+  transform: translateY(-5px); /* Un poco más de 'lift' al ser especial */
+}
+
+/* La corona flotante (sin cambios, solo por si acaso la perdiste) */
+.platinum-crown {
+  position: absolute;
+  top: -16px; /* Ajustado un poco por el borde más grueso */
+  right: -10px;
+  font-size: 40px;
+  z-index: 10;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.8));
+  animation: floatCrown 3s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes floatCrown {
+  0%, 100% { transform: translateY(0) rotate(5deg); }
+  50% { transform: translateY(-4px) rotate(5deg); }
 }

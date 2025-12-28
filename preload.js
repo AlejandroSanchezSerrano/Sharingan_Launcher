@@ -15,6 +15,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   returnToLibrary: (id) => ipcRenderer.invoke('games:return', id),
   removeGame: (id) => ipcRenderer.invoke('games:remove', id),
   updateSortKey: (id, sortKey) => ipcRenderer.invoke('games:updateSortKey', { id, sortKey }),
+  togglePlatinum: (id) => ipcRenderer.invoke('games:togglePlatinum', id),
 
   // Importar + carátulas
   importInstalledGames: (config) => ipcRenderer.invoke('games:importInstalled', config),

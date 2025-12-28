@@ -445,14 +445,26 @@
             ? `<button class="linked-btn" onclick="confirmUnlink('${game.id}')">Vinculado</button>`
             : `<button onclick="setExecutable('${game.id}')">Vincular</button>`;
           const playButton = hasExe ? `<button class="primary" onclick="launchGame('${game.id}')">Jugar</button>` : '';
+          
+          // Texto dinámico para el menú
+          const platText = game.isPlatinum ? "Desmarcar Platino" : "Marcar Platino 👑";
 
-          // Dropdown para completados
+          // Si es platino, añadimos la clase especial al div principal
+          if (game.isPlatinum) {
+            div.classList.add("platinum-card");
+          }
+
+          // HTML de la corona si es platino
+          const crownHtml = game.isPlatinum ? `<div class="platinum-crown">👑</div>` : '';
+
           buttonsHtml = `
+            ${crownHtml} <!-- Insertamos la corona aquí -->
             ${exeStatus}
             ${playButton}
             <div class="action-menu">
               <button class="more-btn" onclick="toggleDropdown(event, '${game.id}')">⋯</button>
               <div id="dropdown-${game.id}" class="dropdown-content">
+                 <div class="dropdown-item" onclick="togglePlatinum('${game.id}')">${platText}</div>
                  <div class="dropdown-item" onclick="returnToLibrary('${game.id}')">Quitar de pasados</div>
                  <div class="dropdown-item" onclick="openSortKeyEditor('${game.id}')">Cambiar orden</div>
                  <div class="dropdown-item" onclick="removeFromLibrary('${game.id}')" style="color: #ff6b6b;">Quitar de biblioteca</div>
@@ -862,6 +874,16 @@
       }
 
       requestAnimationFrame(tickGamepad);
+    }
+    async function togglePlatinum(id) {
+      try {
+        await window.electronAPI.togglePlatinum(id);
+        await loadLibrary(); // Recargamos para ver el borde dorado
+        // No mostramos notificación para que sea una acción rápida, o si quieres:
+        // showNotification("Estado de platino actualizado");
+      } catch (err) {
+        console.error(err);
+      }
     }
   </script>
 </body>

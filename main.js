@@ -854,3 +854,18 @@ ipcMain.handle('games:enrichCovers', async (_e, opts = {}) => {
   console.log('[enrichCovers] updated=', updated);
   return { ok: true, scanned: targets.length, updated };
 });
+
+// -------------------- Platinado --------------------
+
+ipcMain.handle("games:togglePlatinum", (_e, id) => {
+  const gameId = Number(id);
+  // Buscamos solo en completedGames (se asume que el platino es para juegos pasados)
+  const g = completedGames.find((x) => x.id === gameId);
+  
+  if (g) {
+    // Invertimos el valor (true -> false, false -> true)
+    g.isPlatinum = !g.isPlatinum;
+    saveData();
+  }
+  return { games, completedGames };
+});
