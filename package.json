@@ -18,7 +18,8 @@
   "dependencies": {
     "node-fetch": "^2.7.0",
     "ps-node": "^0.1.6",
-    "sweetalert2": "^11.26.13"
+    "sweetalert2": "^11.26.13",
+    "systeminformation": "^5.28.3"
   },
   "build": {
     "appId": "com.sharingan.launcher",

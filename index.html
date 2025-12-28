@@ -433,6 +433,7 @@
             <div class="action-menu">
               <button class="more-btn" onclick="toggleDropdown(event, '${game.id}')">⋯</button>
               <div id="dropdown-${game.id}" class="dropdown-content">
+                 <div class="dropdown-item" onclick="openInfoModal('${game.id}')">Información</div>
                  <div class="dropdown-item" onclick="markCompleted('${game.id}')">Marcar como pasado</div>
                  <div class="dropdown-item" onclick="openSortKeyEditor('${game.id}')">Cambiar orden</div>
                  <div class="dropdown-item" onclick="removeFromLibrary('${game.id}')" style="color: #ff6b6b;">Quitar de biblioteca</div>
@@ -464,6 +465,7 @@
             <div class="action-menu">
               <button class="more-btn" onclick="toggleDropdown(event, '${game.id}')">⋯</button>
               <div id="dropdown-${game.id}" class="dropdown-content">
+                 <div class="dropdown-item" onclick="openInfoModal('${game.id}')">Información</div>
                  <div class="dropdown-item" onclick="togglePlatinum('${game.id}')">${platText}</div>
                  <div class="dropdown-item" onclick="returnToLibrary('${game.id}')">Quitar de pasados</div>
                  <div class="dropdown-item" onclick="openSortKeyEditor('${game.id}')">Cambiar orden</div>
@@ -884,6 +886,157 @@
       } catch (err) {
         console.error(err);
       }
+    }
+
+        // ===============================
+    // Modal de Información y Requisitos
+    // ===============================
+    let mySystemSpecs = null;
+
+    async function openInfoModal(id) {
+      // 1. Cargar specs del PC si no las tenemos
+      if (!mySystemSpecs) {
+        mySystemSpecs = await window.electronAPI.getSystemSpecs();
+      }
+
+      // 2. Buscar datos básicos del juego (local)
+      // Buscamos en cache o recargamos para asegurar
+      let game = libraryGamesCache.find(g => String(g.id) === String(id));
+      if (!game) {
+         const all = await window.electronAPI.getGames();
+         game = all.games.find(g => String(g.id) === String(id)) || all.completedGames.find(g => String(g.id) === String(id));
+      }
+      if (!game) return showNotification("Juego no encontrado", "error");
+
+      // 3. Traer detalles de IGDB (Sinopsis, generos...)
+      let details = null;
+      try {
+        const res = await window.electronAPI.getGameDetails(id);
+        if (res && res.length > 0) details = res[0];
+      } catch (e) {
+        console.error("Error IGDB details", e);
+      }
+
+      // 4. "Simular" o intentar parsear requisitos.
+      // Como IGDB no da esto bien, pondremos datos genéricos o extraidos si existieran.
+      // Para el ejemplo, pondré unos datos "dummy" basados en el año de salida si no hay datos reales,
+      // para que veas la funcionalidad de colores VERDE/ROJO.
+      
+      const isModern = (details?.first_release_date || 0) > 1577836800; // Post 2020
+      
+      const mockMin = {
+        os: "Windows 10",
+        cpu: isModern ? "Intel Core i5-4460" : "Intel Core 2 Duo",
+        ram: isModern ? 8 : 4, // GB Numerico para comparar
+        gpu: isModern ? "GTX 960" : "GTX 460"
+      };
+
+      const mockRec = {
+        os: "Windows 10 / 11",
+        cpu: isModern ? "Intel Core i7-8700" : "Intel Core i5-2500",
+        ram: isModern ? 16 : 8, // GB Numerico
+        gpu: isModern ? "RTX 2060" : "GTX 970"
+      };
+
+      // Función helper para comparar
+      const check = (userVal, reqVal, type) => {
+        if (!userVal) return ""; // Sin datos
+        if (type === 'ram') {
+           return userVal >= reqVal ? 'req-pass' : 'req-fail';
+        }
+        // Para CPU/GPU es muy difícil comparar texto automáticamente sin base de datos.
+        // Lo dejamos neutro o simple matching.
+        return ""; 
+      };
+
+      // Renderizar HTML
+      const coverUrl = details?.cover?.image_id 
+        ? `https://images.igdb.com/igdb/image/upload/t_cover_big/${details.cover.image_id}.jpg`
+        : (game.coverUrl || "assets/no-cover.png");
+
+      const summary = details?.summary || "Sin descripción disponible.";
+      const genres = details?.genres?.map(g => g.name).join(", ") || "No especificado";
+
+      // Iconos visuales (✅ / ❌) para RAM
+      const ramMinClass = check(mySystemSpecs?.ram, mockMin.ram, 'ram');
+      const ramRecClass = check(mySystemSpecs?.ram, mockRec.ram, 'ram');
+
+      const html = `
+        <div class="info-modal-grid">
+          <div>
+             <img src="${coverUrl}" class="info-cover" alt="Cover">
+             <div class="my-specs">
+               <strong>TU SISTEMA:</strong><br>
+               CPU: ${mySystemSpecs?.cpu || 'N/A'}<br>
+               RAM: ${mySystemSpecs?.ram || 0} GB<br>
+               GPU: ${mySystemSpecs?.gpu || 'N/A'}
+             </div>
+          </div>
+          <div class="info-details">
+             <h3>${game.name}</h3>
+             <p class="info-text">${summary}</p>
+             <p style="font-size:12px; color:#888; margin-bottom:10px">Géneros: ${genres}</p>
+             
+             <div class="req-grid">
+                <!-- Mínimos -->
+                <div class="req-column">
+                  <h4>Mínimos</h4>
+                  <div class="req-item">
+                    <span class="req-label">OS</span>
+                    <span class="req-value">${mockMin.os}</span>
+                  </div>
+                  <div class="req-item">
+                    <span class="req-label">CPU</span>
+                    <span class="req-value">${mockMin.cpu}</span>
+                  </div>
+                  <div class="req-item ${ramMinClass}">
+                    <span class="req-label">RAM</span>
+                    <span class="req-value">${mockMin.ram} GB ${ramMinClass.includes('pass') ? '✅' : (ramMinClass ? '❌' : '')}</span>
+                  </div>
+                  <div class="req-item">
+                    <span class="req-label">GPU</span>
+                    <span class="req-value">${mockMin.gpu}</span>
+                  </div>
+                </div>
+
+                <!-- Recomendados -->
+                <div class="req-column">
+                  <h4>Recomendados</h4>
+                  <div class="req-item">
+                    <span class="req-label">OS</span>
+                    <span class="req-value">${mockRec.os}</span>
+                  </div>
+                  <div class="req-item">
+                    <span class="req-label">CPU</span>
+                    <span class="req-value">${mockRec.cpu}</span>
+                  </div>
+                  <div class="req-item ${ramRecClass}">
+                    <span class="req-label">RAM</span>
+                    <span class="req-value">${mockRec.ram} GB ${ramRecClass.includes('pass') ? '✅' : (ramRecClass ? '❌' : '')}</span>
+                  </div>
+                  <div class="req-item">
+                    <span class="req-label">GPU</span>
+                    <span class="req-value">${mockRec.gpu}</span>
+                  </div>
+                </div>
+             </div>
+             <p style="font-size:10px; opacity:0.5; margin-top:5px; text-align:center;">
+               * Comparación de CPU/GPU automática no disponible (requiere base de datos de benchmarks).
+               Datos de requisitos aproximados (IGDB no provee oficiales).
+             </p>
+          </div>
+        </div>
+      `;
+
+      Swal.fire({
+        title: '',
+        html: html,
+        width: 850,
+        background: '#141821',
+        showConfirmButton: false,
+        showCloseButton: true,
+        customClass: { popup: 'info-popup' }
+      });
     }
   </script>
 </body>

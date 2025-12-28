@@ -1,4 +1,5 @@
 const { app, BrowserWindow, ipcMain, dialog, shell } = require("electron");
+const si = require('systeminformation');
 const path = require("path");
 const { execFile } = require("child_process");
 const fs = require("fs");
@@ -868,4 +869,37 @@ ipcMain.handle("games:togglePlatinum", (_e, id) => {
     saveData();
   }
   return { games, completedGames };
+});
+
+// -------------------- System Specs IPC --------------------
+ipcMain.handle('system:getSpecs', async () => {
+  try {
+    const cpu = await si.cpu();
+    const mem = await si.mem();
+    const graphics = await si.graphics();
+    const osInfo = await si.osInfo();
+
+    // Intentamos coger la GPU principal (la que tenga más VRAM o sea discreta)
+    const gpu = graphics.controllers.find(c => c.vram > 1024) || graphics.controllers[0];
+
+    return {
+      cpu: `${cpu.manufacturer} ${cpu.brand}`,
+      ram: Math.floor(mem.total / 1024 / 1024 / 1024), // GB
+      gpu: gpu ? `${gpu.model} (${Math.floor(gpu.vram / 1024)} GB)` : 'Integrada',
+      os: osInfo.distro
+    };
+  } catch (e) {
+    console.error(e);
+    return null;
+  }
+});
+
+// -------------------- IGDB Details (Info Modal) --------------------
+ipcMain.handle('igdb:getDetails', async (_e, id) => {
+  // Nota: IGDB no da requisitos de PC fáciles. 
+  // Pedimos summary, storyline, genres, y screenshots.
+  return igdbGamesQuery(`
+    fields name, summary, storyline, genres.name, involved_companies.company.name, first_release_date, cover.image_id, screenshots.image_id;
+    where id = ${id};
+  `);
 });
