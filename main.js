@@ -516,9 +516,11 @@ ipcMain.handle("games:importInstalled", async (_e, config) => {
           const fields = parseAcfRootFields(acf);
           if (!fields.appid) continue;
 
+          const appid = Number(fields.appid); 
+
           const blacklistAppIds = new Set([
             431960, // Wallpaper Engine
-            2393650, // DSX (ejemplo, cambia por su AppID real)
+            1812620, // DSX (ejemplo, cambia por su AppID real)
             // añade aquí más AppIDs de programas que no quieras importar
           ]);
 
@@ -541,7 +543,6 @@ ipcMain.handle("games:importInstalled", async (_e, config) => {
           }
           report.steam.found++;
 
-          const appid = Number(fields.appid);
           // Ignorar Steamworks Common Redistributables
           if (appid === 228980) {
             continue;
