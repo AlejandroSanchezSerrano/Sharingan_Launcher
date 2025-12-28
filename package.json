@@ -16,6 +16,7 @@
     "electron-builder": "^24.13.3"
   },
   "dependencies": {
+    "fuse.js": "^7.1.0",
     "node-fetch": "^2.7.0",
     "ps-node": "^0.1.6",
     "sweetalert2": "^11.26.13",

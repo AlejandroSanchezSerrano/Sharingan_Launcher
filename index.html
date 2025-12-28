@@ -254,6 +254,8 @@
         if (result.canceled) return;
 
         const { value: platform } = await Swal.fire({
+          background: '#141821',
+          color: '#fff',
           title: '¿Desde qué plataforma se ejecuta?',
           text: 'Así podremos usar guardado en la nube si está disponible',
           icon: 'question',
@@ -349,13 +351,137 @@
 
     function toggleDropdown(e, id) {
       e.stopPropagation();
-      // Cerrar otros dropdowns abiertos
       document.querySelectorAll('.dropdown-content').forEach(d => {
         if (d.id !== `dropdown-${id}`) d.classList.remove('show');
       });
       
       const el = document.getElementById(`dropdown-${id}`);
       if (el) el.classList.toggle('show');
+    }
+
+    async function togglePlatinum(id) {
+      try {
+        await window.electronAPI.togglePlatinum(id);
+        await loadLibrary();
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+        // ===============================
+    // Modal de Información y Requisitos (BEAUTIFIED)
+    // ===============================
+    async function openInfoModal(id) {
+      // 1. Buscar juego local
+      let game = libraryGamesCache.find(g => String(g.id) === String(id));
+      if (!game) {
+         const all = await window.electronAPI.getGames();
+         game = all.games.find(g => String(g.id) === String(id)) || all.completedGames.find(g => String(g.id) === String(id));
+      }
+      if (!game) return showNotification("Juego no encontrado", "error");
+
+      // 2. Detalles IGDB
+      let details = null;
+      try {
+        const res = await window.electronAPI.getGameDetails(id);
+        if (res && res.length > 0) details = res[0];
+      } catch (e) { console.error(e); }
+
+      // 3. Requisitos Reales Steam
+      let reqs = { min: "No disponible", rec: "No disponible" };
+      try {
+        const real = await window.electronAPI.getRealRequirements({ 
+          igdbId: id, 
+          steamAppId: game.steamAppId 
+        });
+        if (real) reqs = real;
+      } catch (err) { console.error(err); }
+
+      // --- HELPER: Función para embellecer el texto de Steam ---
+      const formatSteamReqs = (text) => {
+        if (!text || text.includes("No disponible")) return '<p class="req-val" style="opacity:0.5">Información no disponible.</p>';
+        
+        const lines = text.split('\n');
+        let html = '<div class="req-list">';
+        
+        lines.forEach(line => {
+          let cleanLine = line.trim();
+          if (!cleanLine) return;
+
+          // Filtros: Quitamos lineas que solo dicen "Minimo" o "Recomendado" porque ya tenemos titulo
+          const lower = cleanLine.toLowerCase();
+          if (lower === 'mínimo:' || lower === 'recomendado:' || lower === 'mínimo' || lower === 'recomendado') return;
+
+          // Detectar "Clave: Valor"
+          // Buscamos el primer ':'
+          const splitIdx = cleanLine.indexOf(':');
+
+          if (splitIdx > -1 && splitIdx < 20) { // Si hay ':' al principio (ej: "OS: Win10")
+             const key = cleanLine.substring(0, splitIdx).trim();
+             const val = cleanLine.substring(splitIdx + 1).trim();
+             
+             // Limpiar viñetas si las hay
+             const cleanKey = key.replace(/•/g, '').trim();
+
+             html += `
+               <div class="req-line">
+                 <span class="req-key">${cleanKey}</span>
+                 <span class="req-val">${val}</span>
+               </div>
+             `;
+          } else {
+             // Es una linea de texto normal o una nota
+             html += `
+               <div class="req-line">
+                 <span class="req-val">${cleanLine.replace(/•/g, '').trim()}</span>
+               </div>
+             `;
+          }
+        });
+        html += '</div>';
+        return html;
+      };
+
+      // 4. Renderizar
+      const coverUrl = details?.cover?.image_id 
+        ? `https://images.igdb.com/igdb/image/upload/t_cover_big/${details.cover.image_id}.jpg`
+        : (game.coverUrl || "assets/no-cover.png");
+      const genres = details?.genres?.map(g => g.name).join(", ") || "";
+
+      const html = `
+        <div class="info-modal-grid">
+          <div><img src="${coverUrl}" class="info-cover"></div>
+          <div class="info-details">
+             <h3>${game.name}</h3>
+             <p style="font-size:12px; color:#888;">${genres}</p>
+             
+             <div class="req-real-container">
+                <div class="req-box">
+                   <h4 class="req-title">MÍNIMOS</h4>
+                   ${formatSteamReqs(reqs.min)}
+                </div>
+                <div class="req-box">
+                   <h4 class="req-title">RECOMENDADOS</h4>
+                   ${formatSteamReqs(reqs.rec)}
+                </div>
+             </div>
+             
+             <p style="font-size:10px; opacity:0.3; margin-top:10px; text-align:center;">
+               Datos provistos por Steam Store API
+             </p>
+          </div>
+        </div>
+      `;
+
+      Swal.fire({
+        html: html,
+        width: 950,
+        background: '#141821',
+        color: '#fff',
+        showConfirmButton: false,
+        showCloseButton: true,
+        customClass: { popup: 'info-popup' }
+      });
     }
 
     // ===============================
@@ -446,20 +572,17 @@
             ? `<button class="linked-btn" onclick="confirmUnlink('${game.id}')">Vinculado</button>`
             : `<button onclick="setExecutable('${game.id}')">Vincular</button>`;
           const playButton = hasExe ? `<button class="primary" onclick="launchGame('${game.id}')">Jugar</button>` : '';
-          
-          // Texto dinámico para el menú
-          const platText = game.isPlatinum ? "Desmarcar Platino" : "Marcar Platino 👑";
 
-          // Si es platino, añadimos la clase especial al div principal
+          // Platino logic
+          const platText = game.isPlatinum ? "Desmarcar Platino" : "Marcar Platino 👑";
           if (game.isPlatinum) {
             div.classList.add("platinum-card");
           }
-
-          // HTML de la corona si es platino
           const crownHtml = game.isPlatinum ? `<div class="platinum-crown">👑</div>` : '';
 
+          // Dropdown para completados
           buttonsHtml = `
-            ${crownHtml} <!-- Insertamos la corona aquí -->
+            ${crownHtml}
             ${exeStatus}
             ${playButton}
             <div class="action-menu">
@@ -467,9 +590,9 @@
               <div id="dropdown-${game.id}" class="dropdown-content">
                  <div class="dropdown-item" onclick="openInfoModal('${game.id}')">Información</div>
                  <div class="dropdown-item" onclick="togglePlatinum('${game.id}')">${platText}</div>
-                 <div class="dropdown-item" onclick="returnToLibrary('${game.id}')">Quitar de pasados</div>
+                 <div class="dropdown-item" onclick="returnToLibrary('${game.id}')">Volver a biblioteca</div>
                  <div class="dropdown-item" onclick="openSortKeyEditor('${game.id}')">Cambiar orden</div>
-                 <div class="dropdown-item" onclick="removeFromLibrary('${game.id}')" style="color: #ff6b6b;">Quitar de biblioteca</div>
+                 <div class="dropdown-item" onclick="removeFromLibrary('${game.id}')" style="color: #ff6b6b;">Quitar de pasados</div>
               </div>
             </div>
           `;
@@ -543,10 +666,7 @@
     }
 
     async function openSortKeyEditor(id) {
-      // Buscar en caché global primero
       let game = libraryGamesCache.find(g => String(g.id) === String(id));
-      
-      // Si no está, buscar en estado general (por si estamos en 'completados' y no están en cache de librería)
       if(!game) {
         const { games, completedGames } = await window.electronAPI.getGames();
         game = games.find(g => String(g.id) === String(id)) || completedGames.find(g => String(g.id) === String(id));
@@ -567,6 +687,8 @@
           : "assets/no-cover.png");
 
       const { value: newSortKey } = await Swal.fire({
+        background: '#141821',
+        color: '#fff',
         title: 'Nombre para ordenar',
         html: `
           <div class="sortkey-modal">
@@ -682,6 +804,8 @@
       }
 
       const result = await Swal.fire({
+        background: '#141821',
+        color: '#fff',
         title: 'Importar juegos instalados',
         width: 760,
         html: render(),
@@ -707,14 +831,11 @@
         noneRoot: state.noneRoot
       };
 
-      console.log('IMPORT payload', payload);
-
       try {
-        Swal.fire({ title: 'Importando...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+        Swal.fire({ background: '#141821', color: '#fff', title: 'Importando...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
         await window.electronAPI.importInstalledGames(payload);
 
         const enrich = await window.electronAPI.enrichCovers({ limit: 80 });
-        console.log('ENRICH', enrich);
 
         await loadLibrary();
         refreshSearchUI();
@@ -722,13 +843,15 @@
         showNotification(`Juegos: ${enrich?.updated ?? 0}/${enrich?.scanned ?? 0} importados`);
 
         Swal.fire({
+          background: '#141821',
+          color: '#fff',
           icon: 'success',
           title: 'Importación completada',
           text: `Juegos importados correctamente: ${enrich?.updated ?? 0}/${enrich?.scanned ?? 0}`
         });
       } catch (err) {
         console.error(err);
-        Swal.fire({ icon: 'error', title: 'Error importando', text: String(err?.message || err) });
+        Swal.fire({ background: '#141821', color: '#fff', icon: 'error', title: 'Error importando', text: String(err?.message || err) });
       }
     }
 
@@ -739,7 +862,6 @@
       window.addEventListener("gamepadconnected", (e) => {
         activePadIndex = e.gamepad.index;
         showNotification(`Mando conectado`, 'success');
-        console.log("Gamepad conectado:", e.gamepad.id, "mapping:", e.gamepad.mapping);
       });
 
       window.addEventListener("gamepaddisconnected", (e) => {
@@ -787,7 +909,6 @@
     }
 
     function getGridColumns() {
-      // aproximación: deriva columnas según ancho (igual que tu CSS media queries)
       const w = window.innerWidth;
       if (w <= 700) return 2;
       if (w <= 1000) return 3;
@@ -810,7 +931,6 @@
     }
 
     function backAction() {
-      // Si hay un Swal abierto, intenta cerrarlo (escape)
       const popup = Swal.getPopup?.();
       if (popup) {
         Swal.close();
@@ -835,7 +955,6 @@
       const gp = getPad();
 
       if (gp) {
-        // Standard mapping indices típicos.
         const up = !!gp.buttons[12]?.pressed || (gp.axes?.[1] ?? 0) < -0.6;
         const down = !!gp.buttons[13]?.pressed || (gp.axes?.[1] ?? 0) > 0.6;
         const left = !!gp.buttons[14]?.pressed || (gp.axes?.[0] ?? 0) < -0.6;
@@ -858,16 +977,13 @@
         if (edge(a, "a")) clickPrimaryActionOnFocused();
         if (edge(b, "b")) backAction();
 
-        // Cambiar sección con LB/RB
         if (edge(lb, "lb")) switchSection(-1);
         if (edge(rb, "rb")) switchSection(+1);
 
-        // (Opcional) X para toggle vinculados en biblioteca
         if (edge(x, "x")) {
           if (getActiveSectionId() === "library") toggleLinkedFilter();
         }
 
-        // (Opcional) Y para enfocar buscador si estás en populares
         if (edge(y, "y")) {
           if (getActiveSectionId() === "popular") {
             document.getElementById("searchInput")?.focus();
@@ -876,167 +992,6 @@
       }
 
       requestAnimationFrame(tickGamepad);
-    }
-    async function togglePlatinum(id) {
-      try {
-        await window.electronAPI.togglePlatinum(id);
-        await loadLibrary(); // Recargamos para ver el borde dorado
-        // No mostramos notificación para que sea una acción rápida, o si quieres:
-        // showNotification("Estado de platino actualizado");
-      } catch (err) {
-        console.error(err);
-      }
-    }
-
-        // ===============================
-    // Modal de Información y Requisitos
-    // ===============================
-    let mySystemSpecs = null;
-
-    async function openInfoModal(id) {
-      // 1. Cargar specs del PC si no las tenemos
-      if (!mySystemSpecs) {
-        mySystemSpecs = await window.electronAPI.getSystemSpecs();
-      }
-
-      // 2. Buscar datos básicos del juego (local)
-      // Buscamos en cache o recargamos para asegurar
-      let game = libraryGamesCache.find(g => String(g.id) === String(id));
-      if (!game) {
-         const all = await window.electronAPI.getGames();
-         game = all.games.find(g => String(g.id) === String(id)) || all.completedGames.find(g => String(g.id) === String(id));
-      }
-      if (!game) return showNotification("Juego no encontrado", "error");
-
-      // 3. Traer detalles de IGDB (Sinopsis, generos...)
-      let details = null;
-      try {
-        const res = await window.electronAPI.getGameDetails(id);
-        if (res && res.length > 0) details = res[0];
-      } catch (e) {
-        console.error("Error IGDB details", e);
-      }
-
-      // 4. "Simular" o intentar parsear requisitos.
-      // Como IGDB no da esto bien, pondremos datos genéricos o extraidos si existieran.
-      // Para el ejemplo, pondré unos datos "dummy" basados en el año de salida si no hay datos reales,
-      // para que veas la funcionalidad de colores VERDE/ROJO.
-      
-      const isModern = (details?.first_release_date || 0) > 1577836800; // Post 2020
-      
-      const mockMin = {
-        os: "Windows 10",
-        cpu: isModern ? "Intel Core i5-4460" : "Intel Core 2 Duo",
-        ram: isModern ? 8 : 4, // GB Numerico para comparar
-        gpu: isModern ? "GTX 960" : "GTX 460"
-      };
-
-      const mockRec = {
-        os: "Windows 10 / 11",
-        cpu: isModern ? "Intel Core i7-8700" : "Intel Core i5-2500",
-        ram: isModern ? 16 : 8, // GB Numerico
-        gpu: isModern ? "RTX 2060" : "GTX 970"
-      };
-
-      // Función helper para comparar
-      const check = (userVal, reqVal, type) => {
-        if (!userVal) return ""; // Sin datos
-        if (type === 'ram') {
-           return userVal >= reqVal ? 'req-pass' : 'req-fail';
-        }
-        // Para CPU/GPU es muy difícil comparar texto automáticamente sin base de datos.
-        // Lo dejamos neutro o simple matching.
-        return ""; 
-      };
-
-      // Renderizar HTML
-      const coverUrl = details?.cover?.image_id 
-        ? `https://images.igdb.com/igdb/image/upload/t_cover_big/${details.cover.image_id}.jpg`
-        : (game.coverUrl || "assets/no-cover.png");
-
-      const summary = details?.summary || "Sin descripción disponible.";
-      const genres = details?.genres?.map(g => g.name).join(", ") || "No especificado";
-
-      // Iconos visuales (✅ / ❌) para RAM
-      const ramMinClass = check(mySystemSpecs?.ram, mockMin.ram, 'ram');
-      const ramRecClass = check(mySystemSpecs?.ram, mockRec.ram, 'ram');
-
-      const html = `
-        <div class="info-modal-grid">
-          <div>
-             <img src="${coverUrl}" class="info-cover" alt="Cover">
-             <div class="my-specs">
-               <strong>TU SISTEMA:</strong><br>
-               CPU: ${mySystemSpecs?.cpu || 'N/A'}<br>
-               RAM: ${mySystemSpecs?.ram || 0} GB<br>
-               GPU: ${mySystemSpecs?.gpu || 'N/A'}
-             </div>
-          </div>
-          <div class="info-details">
-             <h3>${game.name}</h3>
-             <p class="info-text">${summary}</p>
-             <p style="font-size:12px; color:#888; margin-bottom:10px">Géneros: ${genres}</p>
-             
-             <div class="req-grid">
-                <!-- Mínimos -->
-                <div class="req-column">
-                  <h4>Mínimos</h4>
-                  <div class="req-item">
-                    <span class="req-label">OS</span>
-                    <span class="req-value">${mockMin.os}</span>
-                  </div>
-                  <div class="req-item">
-                    <span class="req-label">CPU</span>
-                    <span class="req-value">${mockMin.cpu}</span>
-                  </div>
-                  <div class="req-item ${ramMinClass}">
-                    <span class="req-label">RAM</span>
-                    <span class="req-value">${mockMin.ram} GB ${ramMinClass.includes('pass') ? '✅' : (ramMinClass ? '❌' : '')}</span>
-                  </div>
-                  <div class="req-item">
-                    <span class="req-label">GPU</span>
-                    <span class="req-value">${mockMin.gpu}</span>
-                  </div>
-                </div>
-
-                <!-- Recomendados -->
-                <div class="req-column">
-                  <h4>Recomendados</h4>
-                  <div class="req-item">
-                    <span class="req-label">OS</span>
-                    <span class="req-value">${mockRec.os}</span>
-                  </div>
-                  <div class="req-item">
-                    <span class="req-label">CPU</span>
-                    <span class="req-value">${mockRec.cpu}</span>
-                  </div>
-                  <div class="req-item ${ramRecClass}">
-                    <span class="req-label">RAM</span>
-                    <span class="req-value">${mockRec.ram} GB ${ramRecClass.includes('pass') ? '✅' : (ramRecClass ? '❌' : '')}</span>
-                  </div>
-                  <div class="req-item">
-                    <span class="req-label">GPU</span>
-                    <span class="req-value">${mockRec.gpu}</span>
-                  </div>
-                </div>
-             </div>
-             <p style="font-size:10px; opacity:0.5; margin-top:5px; text-align:center;">
-               * Comparación de CPU/GPU automática no disponible (requiere base de datos de benchmarks).
-               Datos de requisitos aproximados (IGDB no provee oficiales).
-             </p>
-          </div>
-        </div>
-      `;
-
-      Swal.fire({
-        title: '',
-        html: html,
-        width: 850,
-        background: '#141821',
-        showConfirmButton: false,
-        showCloseButton: true,
-        customClass: { popup: 'info-popup' }
-      });
     }
   </script>
 </body>

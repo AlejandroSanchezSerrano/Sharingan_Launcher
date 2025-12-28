@@ -1,10 +1,10 @@
 const { app, BrowserWindow, ipcMain, dialog, shell } = require("electron");
-const si = require('systeminformation');
 const path = require("path");
 const { execFile } = require("child_process");
 const fs = require("fs");
 const fetch = require("node-fetch"); // npm install node-fetch@2
 const ps = require("ps-node"); // npm install ps-node
+const si = require('systeminformation'); // npm install systeminformation
 
 let win;
 let games = [];
@@ -300,9 +300,10 @@ app.on("window-all-closed", () => {
   if (process.platform !== "darwin") app.quit();
 });
 
-// -------------------- IGDB helper (simple) --------------------
-async function igdbGamesQuery(body) {
-  const res = await fetch(`${IGDB_URL}/games`, {
+// -------------------- IGDB helper --------------------
+// Acepta 'endpoint' opcional ("games" por defecto) para usar "external_games" cuando sea necesario
+async function igdbGamesQuery(body, endpoint = "games") {
+  const res = await fetch(`${IGDB_URL}/${endpoint}`, {
     method: "POST",
     headers: {
       "Client-ID": IGDB_CLIENT_ID,
@@ -521,12 +522,10 @@ ipcMain.handle("games:importInstalled", async (_e, config) => {
 
           const blacklistAppIds = new Set([
             431960, // Wallpaper Engine
-            1812620, // DSX (ejemplo, cambia por su AppID real)
-            // añade aquí más AppIDs de programas que no quieras importar
+            1812620, // DSX
           ]);
 
           if (blacklistAppIds.has(appid)) {
-            // saltar apps no-juego conocidas
             continue;
           }
 
@@ -767,7 +766,7 @@ ipcMain.handle('games:enrichCovers', async (_e, opts = {}) => {
 
   let updated = 0;
 
-  // Normalización para comparar y buscar (ignora :, -, _, .)
+  // Normalización para comparar y buscar
   const normSearch = s =>
     String(s || '')
       .toLowerCase()
@@ -779,12 +778,8 @@ ipcMain.handle('games:enrichCovers', async (_e, opts = {}) => {
     const originalName = String(g.name || '').trim();
     if (!originalName) continue;
 
-    // Nombre base sin signos de puntuación
     const baseName = normSearch(originalName);
-
-    // Siempre buscamos el nombre completo
     const searchName = baseName;
-
     const safeQ = searchName.replace(/"/g, '\\"');
 
     const res = await fetch(`${IGDB_URL}/games`, {
@@ -806,19 +801,19 @@ ipcMain.handle('games:enrichCovers', async (_e, opts = {}) => {
 
     const data = await res.json();
     if (!Array.isArray(data) || !data.length) {
-      console.log('[enrichCovers] sin resultados para', originalName, 'con búsqueda', searchName);
+      console.log('[enrichCovers] sin resultados para', originalName);
       await sleep(250);
       continue;
     }
 
     const targetNorm = normSearch(originalName);
 
-    // 1) nombre exactamente igual normalizado
+    // 1) nombre exactamente igual
     let hit = data.find(
       x => normSearch(x.name) === targetNorm && x?.cover?.image_id
     );
 
-    // 2) empieza igual o uno contiene al otro
+    // 2) empieza igual o contiene
     if (!hit) {
       hit = data.find(
         x =>
@@ -828,24 +823,17 @@ ipcMain.handle('games:enrichCovers', async (_e, opts = {}) => {
       );
     }
 
-    // 3) último recurso: primer resultado con cover
+    // 3) primer resultado con cover
     if (!hit) {
       hit = data.find(x => x?.cover?.image_id);
     }
 
     if (hit?.cover?.image_id) {
       g.cover = { image_id: hit.cover.image_id };
-      g.coverUrl = `https://images.igdb.com/igdb/image/upload/t_cover_big/${hit.cover.image_id}.jpg`; // [web:1][web:31]
+      g.coverUrl = `https://images.igdb.com/igdb/image/upload/t_cover_big/${hit.cover.image_id}.jpg`;
       updated++;
-      console.log('[enrichCovers] match para', originalName, '=>', hit.name, 'con búsqueda', searchName);
-    } else {
-      console.log(
-        '[enrichCovers] no strong match for:',
-        g.name,
-        'results:',
-        data.map(d => d.name)
-      );
-    }
+      console.log('[enrichCovers] match para', originalName, '=>', hit.name);
+    } 
 
     await sleep(250);
   }
@@ -857,14 +845,11 @@ ipcMain.handle('games:enrichCovers', async (_e, opts = {}) => {
 });
 
 // -------------------- Platinado --------------------
-
 ipcMain.handle("games:togglePlatinum", (_e, id) => {
   const gameId = Number(id);
-  // Buscamos solo en completedGames (se asume que el platino es para juegos pasados)
   const g = completedGames.find((x) => x.id === gameId);
   
   if (g) {
-    // Invertimos el valor (true -> false, false -> true)
     g.isPlatinum = !g.isPlatinum;
     saveData();
   }
@@ -879,7 +864,6 @@ ipcMain.handle('system:getSpecs', async () => {
     const graphics = await si.graphics();
     const osInfo = await si.osInfo();
 
-    // Intentamos coger la GPU principal (la que tenga más VRAM o sea discreta)
     const gpu = graphics.controllers.find(c => c.vram > 1024) || graphics.controllers[0];
 
     return {
@@ -896,10 +880,67 @@ ipcMain.handle('system:getSpecs', async () => {
 
 // -------------------- IGDB Details (Info Modal) --------------------
 ipcMain.handle('igdb:getDetails', async (_e, id) => {
-  // Nota: IGDB no da requisitos de PC fáciles. 
-  // Pedimos summary, storyline, genres, y screenshots.
   return igdbGamesQuery(`
     fields name, summary, storyline, genres.name, involved_companies.company.name, first_release_date, cover.image_id, screenshots.image_id;
     where id = ${id};
   `);
+});
+
+// -------------------- Steam Store API (Requisitos Reales) --------------------
+function stripHtml(html) {
+  if (!html) return "No especificado";
+  let text = html
+    .replace(/<br\s*\/?>/gi, "\n") // br a salto
+    .replace(/<li>/gi, "• ")       // li a punto de lista
+    .replace(/<\/li>/gi, "\n")     // cierre li
+    .replace(/<[^>]+>/g, "");      // borrar resto de etiquetas
+  
+  return text.split('\n').map(l => l.trim()).filter(l => l).join('\n');
+}
+
+ipcMain.handle('steam:getRequirements', async (_e, { igdbId, steamAppId }) => {
+  let targetSteamId = steamAppId;
+
+  // 1. Preguntar a IGDB por el Steam ID si no lo tenemos
+  if (!targetSteamId && igdbId) {
+    try {
+      const res = await igdbGamesQuery(`
+        fields uid; 
+        where game = ${igdbId} & category = 1; 
+        limit 1;
+      `, "external_games"); // Endpoint específico para enlaces externos
+      
+      if (res && res.length > 0) {
+        targetSteamId = res[0].uid;
+      }
+    } catch (e) {
+      console.error("Error buscando Steam ID en IGDB", e);
+    }
+  }
+
+  if (!targetSteamId) return null;
+
+  // 2. Consultar API Tienda Steam
+  try {
+    const steamUrl = `https://store.steampowered.com/api/appdetails?appids=${targetSteamId}&l=spanish`;
+    const response = await fetch(steamUrl);
+    const json = await response.json();
+    
+    const appData = json[targetSteamId];
+
+    if (appData && appData.success && appData.data) {
+      const pcReqs = appData.data.pc_requirements;
+      
+      if (!pcReqs || Array.isArray(pcReqs)) return null;
+
+      return {
+        min: stripHtml(pcReqs.minimum),
+        rec: stripHtml(pcReqs.recommended)
+      };
+    }
+  } catch (e) {
+    console.error("Error conectando con Steam Store", e);
+  }
+
+  return null;
 });

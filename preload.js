@@ -1,29 +1,35 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('electronAPI', {
-  // IGDB
+  // IGDB & Detalles
   fetchPopularGames: () => ipcRenderer.invoke('igdb:popular'),
   searchIGDB: (query) => ipcRenderer.invoke('igdb:search', query),
+  getGameDetails: (id) => ipcRenderer.invoke('igdb:getDetails', id),
 
-  // Biblioteca local
+  // Steam Requisitos Reales
+  getRealRequirements: (ids) => ipcRenderer.invoke('steam:getRequirements', ids),
+
+  // Biblioteca local y Gestión
   getGames: () => ipcRenderer.invoke('games:get'),
   addGame: (game) => ipcRenderer.invoke('games:add', game),
   setExecutable: (id, data) => ipcRenderer.invoke('games:setExe', { id, ...data }),
   unlinkExecutable: (id) => ipcRenderer.invoke('games:unlink', id),
   launchGame: (id) => ipcRenderer.invoke('games:launch', id),
+  
+  // Estados de juego
   markCompleted: (id) => ipcRenderer.invoke('games:completed', id),
   returnToLibrary: (id) => ipcRenderer.invoke('games:return', id),
   removeGame: (id) => ipcRenderer.invoke('games:remove', id),
-  updateSortKey: (id, sortKey) => ipcRenderer.invoke('games:updateSortKey', { id, sortKey }),
   togglePlatinum: (id) => ipcRenderer.invoke('games:togglePlatinum', id),
-  getSystemSpecs: () => ipcRenderer.invoke('system:getSpecs'),
-  getGameDetails: (id) => ipcRenderer.invoke('igdb:getDetails', id),
+  updateSortKey: (id, sortKey) => ipcRenderer.invoke('games:updateSortKey', { id, sortKey }),
 
   // Importar + carátulas
   importInstalledGames: (config) => ipcRenderer.invoke('games:importInstalled', config),
   enrichCovers: (opts) => ipcRenderer.invoke('games:enrichCovers', opts),
 
-  // Diálogos
+  // Diálogos del Sistema
   openFileDialog: () => ipcRenderer.invoke('dialog:openFile'),
   openDirectoryDialog: (opts) => ipcRenderer.invoke('dialog:openDirectory', opts)
+  
+  //getSystemSpecs: () => ipcRenderer.invoke('system:getSpecs'), 
 });
