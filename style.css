@@ -123,7 +123,7 @@ input[type="text"]:focus {
 /* Card de juego */
 
 .game-card {
-  position: relative; 
+  position: relative;
   background: #0c0f18;
   border-radius: 10px;
   padding: 10px;
@@ -132,9 +132,10 @@ input[type="text"]:focus {
   gap: 8px;
   border: 1px solid #191c29;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.45);
-  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
-  height: 100%; 
-  z-index: 1; 
+  transition: transform 0.15s ease, box-shadow 0.15s ease,
+    border-color 0.15s ease;
+  height: 100%;
+  z-index: 1;
 }
 
 .game-card:hover {
@@ -233,7 +234,7 @@ button:hover {
   border-radius: 8px;
   color: white;
   font-weight: bold;
-  box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
   opacity: 0;
   animation: fadeInOut 3s forwards;
 }
@@ -247,10 +248,22 @@ button:hover {
 }
 
 @keyframes fadeInOut {
-  0% { opacity: 0; transform: translateY(-20px); }
-  10% { opacity: 1; transform: translateY(0); }
-  90% { opacity: 1; transform: translateY(0); }
-  100% { opacity: 0; transform: translateY(-20px); }
+  0% {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  10% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  90% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
 }
 
 /* Pantalla de Intro */
@@ -286,9 +299,9 @@ button:hover {
   height: 80px;
   margin-bottom: 20px;
   border-radius: 50%; /* Si quieres que sea redondo */
-  
+
   /* Animación de giro */
-  animation: spin 3s linear infinite; 
+  animation: spin 3s linear infinite;
 }
 
 /* El Título */
@@ -303,13 +316,23 @@ button:hover {
 
 /* Definición de animaciones */
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 @keyframes fadeUp {
-  0% { opacity: 0; transform: translateY(20px); }
-  100% { opacity: 1; transform: translateY(0); }
+  0% {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* Definición de vinculados solo */
@@ -350,12 +373,12 @@ button:hover {
 
 /* Ocultar scrollbar globalmente */
 * {
-  scrollbar-width: none;          /* Firefox */
-  -ms-overflow-style: none;       /* IE / Edge antiguo */
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE / Edge antiguo */
 }
 
 *::-webkit-scrollbar {
-  display: none;                  /* Chrome, Edge, Electron */
+  display: none; /* Chrome, Edge, Electron */
 }
 
 /* Boton vinculado clickable */
@@ -504,17 +527,17 @@ button:hover {
 .action-menu {
   position: relative;
   display: inline-block;
-  margin-left: auto; 
+  margin-left: auto;
 }
 
 .dropdown-content {
   display: none;
   position: absolute;
   bottom: 100%;
-  right: 0; 
+  right: 0;
   background-color: #2b2b2b;
   min-width: 180px;
-  box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.6);
+  box-shadow: 0px 8px 16px 0px rgba(0, 0, 0, 0.6);
   z-index: 100;
   border-radius: 6px;
   border: 1px solid #444;
@@ -577,14 +600,19 @@ button:hover {
   right: -10px;
   font-size: 40px;
   z-index: 10;
-  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.8));
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.8));
   animation: floatCrown 3s ease-in-out infinite;
   pointer-events: none;
 }
 
 @keyframes floatCrown {
-  0%, 100% { transform: translateY(0) rotate(5deg); }
-  50% { transform: translateY(-4px) rotate(5deg); }
+  0%,
+  100% {
+    transform: translateY(0) rotate(5deg);
+  }
+  50% {
+    transform: translateY(-4px) rotate(5deg);
+  }
 }
 
 /* --- Info Modal --- */
@@ -599,7 +627,7 @@ button:hover {
 .info-cover {
   width: 100%;
   border-radius: 8px;
-  box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
 }
 
 .info-details h3 {
@@ -647,7 +675,7 @@ button:hover {
   padding: 6px;
   border-radius: 4px;
   border: 1px solid transparent;
-  background: rgba(0,0,0,0.2);
+  background: rgba(0, 0, 0, 0.2);
 }
 
 .req-label {
@@ -665,13 +693,17 @@ button:hover {
   border-color: #2ecc71;
   background: rgba(46, 204, 113, 0.1);
 }
-.req-pass .req-value { color: #2ecc71; }
+.req-pass .req-value {
+  color: #2ecc71;
+}
 
 .req-fail {
   border-color: #e74c3c;
   background: rgba(231, 76, 60, 0.1);
 }
-.req-fail .req-value { color: #e74c3c; }
+.req-fail .req-value {
+  color: #e74c3c;
+}
 
 .my-specs {
   margin-top: 15px;
@@ -683,30 +715,36 @@ button:hover {
 }
 
 @media (max-width: 800px) {
-  .info-modal-grid { grid-template-columns: 1fr; }
-  .info-cover { max-width: 150px; margin: 0 auto; display: block; }
+  .info-modal-grid {
+    grid-template-columns: 1fr;
+  }
+  .info-cover {
+    max-width: 150px;
+    margin: 0 auto;
+    display: block;
+  }
 }
 
 /* --- Estilos Requisitos Beautified --- */
 .req-real-container {
-  display: grid; 
-  grid-template-columns: 1fr 1fr; 
-  gap: 20px; 
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
   margin-top: 20px;
 }
 
 .req-box {
-  background: rgba(255, 255, 255, 0.03); 
-  padding: 15px; 
+  background: rgba(255, 255, 255, 0.03);
+  padding: 15px;
   border-radius: 8px;
   border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .req-title {
-  color: #5660ff; 
-  margin-top: 0; 
-  border-bottom: 1px solid #333; 
-  padding-bottom: 10px; 
+  color: #5660ff;
+  margin-top: 0;
+  border-bottom: 1px solid #333;
+  padding-bottom: 10px;
   margin-bottom: 10px;
   text-transform: uppercase;
   font-size: 14px;
@@ -722,23 +760,23 @@ button:hover {
 
 .req-line {
   display: flex;
-  flex-direction: column; 
-  border-bottom: 1px solid rgba(255,255,255,0.05);
+  flex-direction: column;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
   padding-bottom: 6px;
 }
 
 /* La etiqueta (ej: "Procesador") */
 .req-key {
-  color: #888; 
-  font-weight: bold; 
-  font-size: 11px; 
+  color: #888;
+  font-weight: bold;
+  font-size: 11px;
   text-transform: uppercase;
   margin-bottom: 2px;
 }
 
 /* El valor (ej: "Intel Core i5...") */
 .req-val {
-  color: #fff; 
-  font-size: 13px; 
+  color: #fff;
+  font-size: 13px;
   line-height: 1.4;
 }

@@ -1,270 +1,302 @@
 <!DOCTYPE html>
 <html lang="es">
-<head>
-  <meta charset="UTF-8">
-  <title>Sharingan Launcher</title>
-  <link rel="stylesheet" href="style.css">
-</head>
-<body>
-  <audio id="easter-audio" src="assets/dartacan.mp3" preload="auto"></audio>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Sharingan Launcher</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <audio id="easter-audio" src="assets/dartacan.mp3" preload="auto"></audio>
 
-  <!-- Pantalla de Intro -->
-  <div id="intro-screen">
-    <div class="intro-content">
-      <img src="assets/icon.png" alt="Logo" class="intro-logo">
-      <h1 class="intro-title">Sharingan Launcher</h1>
+    <!-- Pantalla de Intro -->
+    <div id="intro-screen">
+      <div class="intro-content">
+        <img src="assets/icon.png" alt="Logo" class="intro-logo" />
+        <h1 class="intro-title">Sharingan Launcher</h1>
+      </div>
+      <audio id="intro-audio" src="assets/intro.mp3"></audio>
     </div>
-    <audio id="intro-audio" src="assets/intro.mp3"></audio>
-  </div>
 
-  <div id="notification-container"></div>
+    <div id="notification-container"></div>
 
-  <div class="app">
-    <!-- Sidebar -->
-    <aside class="sidebar">
-      <div class="sidebar-title">Sharingan Launcher</div>
-      <ul>
-        <li class="active" onclick="showSection('popular', this)">Juegos populares</li>
-        <li onclick="showSection('library', this)">Mi biblioteca</li>
-        <li onclick="showSection('completed', this)">Juegos pasados</li>
-      </ul>
-    </aside>
+    <div class="app">
+      <!-- Sidebar -->
+      <aside class="sidebar">
+        <div class="sidebar-title">Sharingan Launcher</div>
+        <ul>
+          <li class="active" onclick="showSection('popular', this)">
+            Juegos populares
+          </li>
+          <li onclick="showSection('library', this)">Mi biblioteca</li>
+          <li onclick="showSection('completed', this)">Juegos pasados</li>
+        </ul>
+      </aside>
 
-    <!-- Contenido principal -->
-    <main class="main-content">
-      <!-- Populares / búsqueda -->
-      <section id="popular" class="section active">
-        <h2 class="section-title">Juegos populares</h2>
-        <input type="text" id="searchInput" placeholder="Buscar juegos..." oninput="onSearchInput()" />
-        <div id="gamesList" class="cards-grid"></div>
-      </section>
+      <!-- Contenido principal -->
+      <main class="main-content">
+        <!-- Populares / búsqueda -->
+        <section id="popular" class="section active">
+          <h2 class="section-title">Juegos populares</h2>
+          <input
+            type="text"
+            id="searchInput"
+            placeholder="Buscar juegos..."
+            oninput="onSearchInput()"
+          />
+          <div id="gamesList" class="cards-grid"></div>
+        </section>
 
-      <!-- Biblioteca -->
-      <section id="library" class="section">
-        <div class="library-header">
-          <h2 class="section-title" id="libraryTitle">Juegos (0)</h2>
+        <!-- Biblioteca -->
+        <section id="library" class="section">
+          <div class="library-header">
+            <h2 class="section-title" id="libraryTitle">Juegos (0)</h2>
 
-          <button id="linkedFilterBtn" class="filter-btn" onclick="toggleLinkedFilter()">Vinculados</button>
+            <button
+              id="linkedFilterBtn"
+              class="filter-btn"
+              onclick="toggleLinkedFilter()"
+            >
+              Vinculados
+            </button>
 
-          <button class="filter-btn importBtn" onclick="openImportModal()">
-            Importar instalados
-          </button>
-        </div>
+            <button class="filter-btn importBtn" onclick="openImportModal()">
+              Importar instalados
+            </button>
+          </div>
 
-        <div id="libraryList" class="cards-grid"></div>
-      </section>
+          <div id="libraryList" class="cards-grid"></div>
+        </section>
 
-      <!-- Pasados -->
-      <section id="completed" class="section">
-        <h2 class="section-title">Juegos pasados</h2>
-        <div id="completedList" class="cards-grid"></div>
-      </section>
-    </main>
-  </div>
+        <!-- Pasados -->
+        <section id="completed" class="section">
+          <h2 class="section-title">Juegos pasados</h2>
+          <div id="completedList" class="cards-grid"></div>
+        </section>
+      </main>
+    </div>
 
-  <script src="node_modules/sweetalert2/dist/sweetalert2.all.min.js"></script>
+    <script src="node_modules/sweetalert2/dist/sweetalert2.all.min.js"></script>
 
-  <script>
-    // ===============================
-    // Variables globales
-    // ===============================
-    let gamesTemp = [];
-    let libraryIds = new Set();
-    let currentSearchGames = [];
-    let showOnlyLinked = false;
-    let libraryGamesCache = [];
-    let dartacanPlayed = false;
+    <script>
+      // ===============================
+      // Variables globales
+      // ===============================
+      let gamesTemp = [];
+      let libraryIds = new Set();
+      let currentSearchGames = [];
+      let showOnlyLinked = false;
+      let libraryGamesCache = [];
+      let dartacanPlayed = false;
 
-    // Gamepad state
-    let activePadIndex = null;
-    let gpLast = {
-      up:false, down:false, left:false, right:false,
-      a:false, b:false, x:false, y:false,
-      lb:false, rb:false
-    };
-    let focusedIndex = 0;
-    let focusedContainerId = "gamesList"; // cambia según sección
+      // Gamepad state
+      let activePadIndex = null;
+      let gpLast = {
+        up: false,
+        down: false,
+        left: false,
+        right: false,
+        a: false,
+        b: false,
+        x: false,
+        y: false,
+        lb: false,
+        rb: false,
+      };
+      let focusedIndex = 0;
+      let focusedContainerId = "gamesList"; // cambia según sección
 
-    // ===============================
-    // Navegación lateral
-    // ===============================
-    function showSection(id, el) {
-      document.querySelectorAll(".section").forEach(s => s.classList.remove("active"));
-      document.getElementById(id).classList.add("active");
+      // ===============================
+      // Navegación lateral
+      // ===============================
+      function showSection(id, el) {
+        document
+          .querySelectorAll(".section")
+          .forEach((s) => s.classList.remove("active"));
+        document.getElementById(id).classList.add("active");
 
-      document.querySelectorAll(".sidebar li").forEach(li => li.classList.remove("active"));
-      if (el) el.classList.add("active");
+        document
+          .querySelectorAll(".sidebar li")
+          .forEach((li) => li.classList.remove("active"));
+        if (el) el.classList.add("active");
 
-      // al cambiar sección, reinicia foco al primer elemento del grid
-      if (id === "popular") focusedContainerId = "gamesList";
-      if (id === "library") focusedContainerId = "libraryList";
-      if (id === "completed") focusedContainerId = "completedList";
-      focusedIndex = 0;
-      updateGamepadFocus(true);
-    }
-
-    function getActiveSectionId() {
-      const el = document.querySelector(".section.active");
-      return el?.id || "popular";
-    }
-
-    // ===============================
-    // Carga inicial (UNIFICADA)
-    // ===============================
-    window.addEventListener("DOMContentLoaded", async () => {
-      // filtro biblioteca
-      const savedFilter = localStorage.getItem("libraryLinkedFilter");
-      showOnlyLinked = savedFilter === "true";
-
-      // intro
-      const introScreen = document.getElementById('intro-screen');
-      const introAudio = document.getElementById('intro-audio');
-
-      try {
-        introAudio.volume = 0.5;
-        await introAudio.play();
-      } catch (err) {
-        console.warn("Audio bloqueado o no encontrado:", err);
-      }
-
-      // carga datos
-      const loadPromises = Promise.all([loadLibrary(), loadPopularGames()]);
-
-      setTimeout(async () => {
-        await loadPromises;
-        introScreen.classList.add('hidden');
-        setTimeout(() => introScreen.remove(), 500);
-
-        // foco inicial mando
-        focusedContainerId = "gamesList";
+        // al cambiar sección, reinicia foco al primer elemento del grid
+        if (id === "popular") focusedContainerId = "gamesList";
+        if (id === "library") focusedContainerId = "libraryList";
+        if (id === "completed") focusedContainerId = "completedList";
         focusedIndex = 0;
         updateGamepadFocus(true);
-      }, 2000);
-
-      // gamepad loop
-      setupGamepad();
-    });
-
-    // Cerrar dropdowns al hacer click fuera
-    window.addEventListener('click', (e) => {
-      if (!e.target.matches('.more-btn')) {
-        document.querySelectorAll('.dropdown-content').forEach(d => d.classList.remove('show'));
       }
-    });
 
-    // ===============================
-    // Populares / búsqueda IGDB
-    // ===============================
-    let lastSearchTimeout = null;
+      function getActiveSectionId() {
+        const el = document.querySelector(".section.active");
+        return el?.id || "popular";
+      }
 
-    function onSearchInput() {
-      const q = document.getElementById("searchInput").value.trim();
-      // Easter egg: "Dartacan"
-      const normalized = q.toLowerCase();
-      if (normalized === "dartacan") {
-        if (!dartacanPlayed) {
-          dartacanPlayed = true;
+      // ===============================
+      // Carga inicial (UNIFICADA)
+      // ===============================
+      window.addEventListener("DOMContentLoaded", async () => {
+        // filtro biblioteca
+        const savedFilter = localStorage.getItem("libraryLinkedFilter");
+        showOnlyLinked = savedFilter === "true";
 
-          const audio = document.getElementById("easter-audio");
-          if (audio) {
-            audio.currentTime = 0;
-            audio.play().catch((err) => {
-              console.warn("No se pudo reproducir el easter egg (autoplay/política):", err);
-            });
-          }
+        // intro
+        const introScreen = document.getElementById("intro-screen");
+        const introAudio = document.getElementById("intro-audio");
+
+        try {
+          introAudio.volume = 0.5;
+          await introAudio.play();
+        } catch (err) {
+          console.warn("Audio bloqueado o no encontrado:", err);
         }
-      } else {
-        dartacanPlayed = false;
-      }
-      clearTimeout(lastSearchTimeout);
-      lastSearchTimeout = setTimeout(() => {
-        if (q.length === 0) loadPopularGames();
-        else searchGames(q);
-      }, 350);
-    }
 
-    async function loadPopularGames() {
-      const games = await window.electronAPI.fetchPopularGames();
-      currentSearchGames = games || [];
-      gamesTemp = [];
-      displayGames("gamesList", currentSearchGames, "add");
-      updateGamepadFocus(true);
-    }
+        // carga datos
+        const loadPromises = Promise.all([loadLibrary(), loadPopularGames()]);
 
-    async function searchGames(query) {
-      const games = await window.electronAPI.searchIGDB(query);
-      currentSearchGames = games || [];
-      gamesTemp = [];
-      displayGames("gamesList", currentSearchGames, "add");
-      updateGamepadFocus(true);
-    }
+        setTimeout(async () => {
+          await loadPromises;
+          introScreen.classList.add("hidden");
+          setTimeout(() => introScreen.remove(), 500);
 
-    // ===============================
-    // Biblioteca local
-    // ===============================
-    async function loadLibrary() {
-      let { games, completedGames } = await window.electronAPI.getGames();
+          // foco inicial mando
+          focusedContainerId = "gamesList";
+          focusedIndex = 0;
+          updateGamepadFocus(true);
+        }, 2000);
 
-      libraryIds.clear();
-      if (Array.isArray(games)) games.forEach(g => libraryIds.add(g.id));
-      if (Array.isArray(completedGames)) completedGames.forEach(g => libraryIds.add(g.id));
-
-      games = games.slice().sort((a, b) => {
-        const ak = (a.sortKey || a.name || '').toString();
-        const bk = (b.sortKey || b.name || '').toString();
-        return ak.localeCompare(bk, 'es', { sensitivity: 'base' });
+        // gamepad loop
+        setupGamepad();
       });
 
-      completedGames = completedGames.slice().sort((a, b) => {
-        const ak = (a.sortKey || a.name || '').toString();
-        const bk = (b.sortKey || b.name || '').toString();
-        return ak.localeCompare(bk, 'es', { sensitivity: 'base' });
+      // Cerrar dropdowns al hacer click fuera
+      window.addEventListener("click", (e) => {
+        if (!e.target.matches(".more-btn")) {
+          document
+            .querySelectorAll(".dropdown-content")
+            .forEach((d) => d.classList.remove("show"));
+        }
       });
 
-      libraryGamesCache = games;
-      applyLibraryFilter();
-      displayGames("completedList", completedGames, "completed");
-      updateGamepadFocus(true);
-    }
+      // ===============================
+      // Populares / búsqueda IGDB
+      // ===============================
+      let lastSearchTimeout = null;
 
-    function refreshSearchUI() {
-      gamesTemp = [];
-      displayGames("gamesList", currentSearchGames, "add");
-      updateGamepadFocus(true);
-    }
+      function onSearchInput() {
+        const q = document.getElementById("searchInput").value.trim();
+        // Easter egg: "Dartacan"
+        const normalized = q.toLowerCase();
+        if (normalized === "dartacan") {
+          if (!dartacanPlayed) {
+            dartacanPlayed = true;
 
-    // ===============================
-    // Acciones
-    // ===============================
-    async function addFromJson(game) {
-      try {
-        await window.electronAPI.addGame(game);
-        await loadLibrary();
-        refreshSearchUI();
-        showNotification(`"${game.name}" agregado a la biblioteca correctamente.`);
-      } catch (error) {
-        console.error(error);
-        showNotification(`Error al agregar "${game.name}".`, 'error');
+            const audio = document.getElementById("easter-audio");
+            if (audio) {
+              audio.currentTime = 0;
+              audio.play().catch((err) => {
+                console.warn(
+                  "No se pudo reproducir el easter egg (autoplay/política):",
+                  err
+                );
+              });
+            }
+          }
+        } else {
+          dartacanPlayed = false;
+        }
+        clearTimeout(lastSearchTimeout);
+        lastSearchTimeout = setTimeout(() => {
+          if (q.length === 0) loadPopularGames();
+          else searchGames(q);
+        }, 350);
       }
-    }
 
-    async function setExecutable(id) {
-      try {
-        const result = await window.electronAPI.openFileDialog();
-        if (result.canceled) return;
+      async function loadPopularGames() {
+        const games = await window.electronAPI.fetchPopularGames();
+        currentSearchGames = games || [];
+        gamesTemp = [];
+        displayGames("gamesList", currentSearchGames, "add");
+        updateGamepadFocus(true);
+      }
 
-        const { value: platform } = await Swal.fire({
-          background: '#141821',
-          color: '#fff',
-          title: '¿Desde qué plataforma se ejecuta?',
-          text: 'Así podremos usar guardado en la nube si está disponible',
-          icon: 'question',
-          showCancelButton: true,
-          confirmButtonText: 'Aceptar',
-          cancelButtonText: 'Cancelar',
-          focusConfirm: false,
-          customClass: { popup: 'swal-platform-popup' },
-          html: `
+      async function searchGames(query) {
+        const games = await window.electronAPI.searchIGDB(query);
+        currentSearchGames = games || [];
+        gamesTemp = [];
+        displayGames("gamesList", currentSearchGames, "add");
+        updateGamepadFocus(true);
+      }
+
+      // ===============================
+      // Biblioteca local
+      // ===============================
+      async function loadLibrary() {
+        let { games, completedGames } = await window.electronAPI.getGames();
+
+        libraryIds.clear();
+        if (Array.isArray(games)) games.forEach((g) => libraryIds.add(g.id));
+        if (Array.isArray(completedGames))
+          completedGames.forEach((g) => libraryIds.add(g.id));
+
+        games = games.slice().sort((a, b) => {
+          const ak = (a.sortKey || a.name || "").toString();
+          const bk = (b.sortKey || b.name || "").toString();
+          return ak.localeCompare(bk, "es", { sensitivity: "base" });
+        });
+
+        completedGames = completedGames.slice().sort((a, b) => {
+          const ak = (a.sortKey || a.name || "").toString();
+          const bk = (b.sortKey || b.name || "").toString();
+          return ak.localeCompare(bk, "es", { sensitivity: "base" });
+        });
+
+        libraryGamesCache = games;
+        applyLibraryFilter();
+        displayGames("completedList", completedGames, "completed");
+        updateGamepadFocus(true);
+      }
+
+      function refreshSearchUI() {
+        gamesTemp = [];
+        displayGames("gamesList", currentSearchGames, "add");
+        updateGamepadFocus(true);
+      }
+
+      // ===============================
+      // Acciones
+      // ===============================
+      async function addFromJson(game) {
+        try {
+          await window.electronAPI.addGame(game);
+          await loadLibrary();
+          refreshSearchUI();
+          showNotification(
+            `"${game.name}" agregado a la biblioteca correctamente.`
+          );
+        } catch (error) {
+          console.error(error);
+          showNotification(`Error al agregar "${game.name}".`, "error");
+        }
+      }
+
+      async function setExecutable(id) {
+        try {
+          const result = await window.electronAPI.openFileDialog();
+          if (result.canceled) return;
+
+          const { value: platform } = await Swal.fire({
+            background: "#141821",
+            color: "#fff",
+            title: "¿Desde qué plataforma se ejecuta?",
+            text: "Así podremos usar guardado en la nube si está disponible",
+            icon: "question",
+            showCancelButton: true,
+            confirmButtonText: "Aceptar",
+            cancelButtonText: "Cancelar",
+            focusConfirm: false,
+            customClass: { popup: "swal-platform-popup" },
+            html: `
             <div class="platform-grid">
               <label class="platform-option">
                 <input type="radio" name="platform" value="steam" />
@@ -299,157 +331,182 @@
               </label>
             </div>
           `,
-          preConfirm: () => {
-            const checked = document.querySelector('input[name="platform"]:checked');
-            if (!checked) {
-              Swal.showValidationMessage('Selecciona una opción');
-              return false;
-            }
-            return checked.value;
-          }
+            preConfirm: () => {
+              const checked = document.querySelector(
+                'input[name="platform"]:checked'
+              );
+              if (!checked) {
+                Swal.showValidationMessage("Selecciona una opción");
+                return false;
+              }
+              return checked.value;
+            },
+          });
+
+          if (!platform) return;
+
+          await window.electronAPI.setExecutable(id, {
+            path: result.filePath,
+            platform,
+          });
+          await loadLibrary();
+          refreshSearchUI();
+          showNotification("Ejecutable vinculado correctamente");
+        } catch (err) {
+          console.error(err);
+          showNotification("Error al vincular el ejecutable", "error");
+        }
+      }
+
+      async function launchGame(id) {
+        try {
+          await window.electronAPI.launchGame(id);
+        } catch (error) {
+          console.error(error);
+          showNotification("Error al iniciar el juego.", "error");
+        }
+      }
+
+      async function markCompleted(id) {
+        await window.electronAPI.markCompleted(id);
+        loadLibrary();
+      }
+
+      async function returnToLibrary(id) {
+        await window.electronAPI.returnToLibrary(id);
+        loadLibrary();
+      }
+
+      async function removeFromLibrary(id) {
+        if (
+          confirm(
+            "¿Estás seguro de que quieres eliminar este juego de la biblioteca?"
+          )
+        ) {
+          await window.electronAPI.removeGame(Number(id));
+          await loadLibrary();
+          refreshSearchUI();
+          showNotification("Juego eliminado de la biblioteca.");
+        }
+      }
+
+      function toggleDropdown(e, id) {
+        e.stopPropagation();
+        document.querySelectorAll(".dropdown-content").forEach((d) => {
+          if (d.id !== `dropdown-${id}`) d.classList.remove("show");
         });
 
-        if (!platform) return;
-
-        await window.electronAPI.setExecutable(id, { path: result.filePath, platform });
-        await loadLibrary();
-        refreshSearchUI();
-        showNotification('Ejecutable vinculado correctamente');
-      } catch (err) {
-        console.error(err);
-        showNotification('Error al vincular el ejecutable', 'error');
+        const el = document.getElementById(`dropdown-${id}`);
+        if (el) el.classList.toggle("show");
       }
-    }
 
-    async function launchGame(id) {
-      try {
-        await window.electronAPI.launchGame(id);
-      } catch (error) {
-        console.error(error);
-        showNotification("Error al iniciar el juego.", 'error');
+      async function togglePlatinum(id) {
+        try {
+          await window.electronAPI.togglePlatinum(id);
+          await loadLibrary();
+        } catch (err) {
+          console.error(err);
+        }
       }
-    }
 
-    async function markCompleted(id) {
-      await window.electronAPI.markCompleted(id);
-      loadLibrary();
-    }
+      // ===============================
+      // Modal de Información y Requisitos (BEAUTIFIED)
+      // ===============================
+      async function openInfoModal(id) {
+        // 1. Buscar juego local
+        let game = libraryGamesCache.find((g) => String(g.id) === String(id));
+        if (!game) {
+          const all = await window.electronAPI.getGames();
+          game =
+            all.games.find((g) => String(g.id) === String(id)) ||
+            all.completedGames.find((g) => String(g.id) === String(id));
+        }
+        if (!game) return showNotification("Juego no encontrado", "error");
 
-    async function returnToLibrary(id) {
-      await window.electronAPI.returnToLibrary(id);
-      loadLibrary();
-    }
+        // 2. Detalles IGDB
+        let details = null;
+        try {
+          const res = await window.electronAPI.getGameDetails(id);
+          if (res && res.length > 0) details = res[0];
+        } catch (e) {
+          console.error(e);
+        }
 
-    async function removeFromLibrary(id) {
-      if (confirm("¿Estás seguro de que quieres eliminar este juego de la biblioteca?")) {
-        await window.electronAPI.removeGame(Number(id));
-        await loadLibrary();
-        refreshSearchUI();
-        showNotification("Juego eliminado de la biblioteca.");
-      }
-    }
+        // 3. Requisitos Reales Steam
+        let reqs = { min: "No disponible", rec: "No disponible" };
+        try {
+          const real = await window.electronAPI.getRealRequirements({
+            igdbId: id,
+            steamAppId: game.steamAppId,
+            gameName: game.name,
+          });
+          if (real) reqs = real;
+        } catch (err) {
+          console.error(err);
+        }
 
-    function toggleDropdown(e, id) {
-      e.stopPropagation();
-      document.querySelectorAll('.dropdown-content').forEach(d => {
-        if (d.id !== `dropdown-${id}`) d.classList.remove('show');
-      });
-      
-      const el = document.getElementById(`dropdown-${id}`);
-      if (el) el.classList.toggle('show');
-    }
+        // --- HELPER: Función para embellecer el texto de Steam ---
+        const formatSteamReqs = (text) => {
+          if (!text || text.includes("No disponible"))
+            return '<p class="req-val" style="opacity:0.5">Información no disponible.</p>';
 
-    async function togglePlatinum(id) {
-      try {
-        await window.electronAPI.togglePlatinum(id);
-        await loadLibrary();
-      } catch (err) {
-        console.error(err);
-      }
-    }
+          const lines = text.split("\n");
+          let html = '<div class="req-list">';
 
-        // ===============================
-    // Modal de Información y Requisitos (BEAUTIFIED)
-    // ===============================
-    async function openInfoModal(id) {
-      // 1. Buscar juego local
-      let game = libraryGamesCache.find(g => String(g.id) === String(id));
-      if (!game) {
-         const all = await window.electronAPI.getGames();
-         game = all.games.find(g => String(g.id) === String(id)) || all.completedGames.find(g => String(g.id) === String(id));
-      }
-      if (!game) return showNotification("Juego no encontrado", "error");
+          lines.forEach((line) => {
+            let cleanLine = line.trim();
+            if (!cleanLine) return;
 
-      // 2. Detalles IGDB
-      let details = null;
-      try {
-        const res = await window.electronAPI.getGameDetails(id);
-        if (res && res.length > 0) details = res[0];
-      } catch (e) { console.error(e); }
+            // Filtros: Quitamos lineas que solo dicen "Minimo" o "Recomendado" porque ya tenemos titulo
+            const lower = cleanLine.toLowerCase();
+            if (
+              lower === "mínimo:" ||
+              lower === "recomendado:" ||
+              lower === "mínimo" ||
+              lower === "recomendado"
+            )
+              return;
 
-      // 3. Requisitos Reales Steam
-      let reqs = { min: "No disponible", rec: "No disponible" };
-      try {
-        const real = await window.electronAPI.getRealRequirements({ 
-          igdbId: id, 
-          steamAppId: game.steamAppId,
-          gameName: game.name
-        });
-        if (real) reqs = real;
-      } catch (err) { console.error(err); }
+            // Detectar "Clave: Valor"
+            // Buscamos el primer ':'
+            const splitIdx = cleanLine.indexOf(":");
 
-      // --- HELPER: Función para embellecer el texto de Steam ---
-      const formatSteamReqs = (text) => {
-        if (!text || text.includes("No disponible")) return '<p class="req-val" style="opacity:0.5">Información no disponible.</p>';
-        
-        const lines = text.split('\n');
-        let html = '<div class="req-list">';
-        
-        lines.forEach(line => {
-          let cleanLine = line.trim();
-          if (!cleanLine) return;
+            if (splitIdx > -1 && splitIdx < 20) {
+              // Si hay ':' al principio (ej: "OS: Win10")
+              const key = cleanLine.substring(0, splitIdx).trim();
+              const val = cleanLine.substring(splitIdx + 1).trim();
 
-          // Filtros: Quitamos lineas que solo dicen "Minimo" o "Recomendado" porque ya tenemos titulo
-          const lower = cleanLine.toLowerCase();
-          if (lower === 'mínimo:' || lower === 'recomendado:' || lower === 'mínimo' || lower === 'recomendado') return;
+              // Limpiar viñetas si las hay
+              const cleanKey = key.replace(/•/g, "").trim();
 
-          // Detectar "Clave: Valor"
-          // Buscamos el primer ':'
-          const splitIdx = cleanLine.indexOf(':');
-
-          if (splitIdx > -1 && splitIdx < 20) { // Si hay ':' al principio (ej: "OS: Win10")
-             const key = cleanLine.substring(0, splitIdx).trim();
-             const val = cleanLine.substring(splitIdx + 1).trim();
-             
-             // Limpiar viñetas si las hay
-             const cleanKey = key.replace(/•/g, '').trim();
-
-             html += `
+              html += `
                <div class="req-line">
                  <span class="req-key">${cleanKey}</span>
                  <span class="req-val">${val}</span>
                </div>
              `;
-          } else {
-             // Es una linea de texto normal o una nota
-             html += `
+            } else {
+              // Es una linea de texto normal o una nota
+              html += `
                <div class="req-line">
-                 <span class="req-val">${cleanLine.replace(/•/g, '').trim()}</span>
+                 <span class="req-val">${cleanLine
+                   .replace(/•/g, "")
+                   .trim()}</span>
                </div>
              `;
-          }
-        });
-        html += '</div>';
-        return html;
-      };
+            }
+          });
+          html += "</div>";
+          return html;
+        };
 
-      // 4. Renderizar
-      const coverUrl = details?.cover?.image_id 
-        ? `https://images.igdb.com/igdb/image/upload/t_cover_big/${details.cover.image_id}.jpg`
-        : (game.coverUrl || "assets/no-cover.png");
-      const genres = details?.genres?.map(g => g.name).join(", ") || "";
+        // 4. Renderizar
+        const coverUrl = details?.cover?.image_id
+          ? `https://images.igdb.com/igdb/image/upload/t_cover_big/${details.cover.image_id}.jpg`
+          : game.coverUrl || "assets/no-cover.png";
+        const genres = details?.genres?.map((g) => g.name).join(", ") || "";
 
-      const html = `
+        const html = `
         <div class="info-modal-grid">
           <div><img src="${coverUrl}" class="info-cover"></div>
           <div class="info-details">
@@ -474,29 +531,29 @@
         </div>
       `;
 
-      Swal.fire({
-        html: html,
-        width: 950,
-        background: '#141821',
-        color: '#fff',
-        showConfirmButton: false,
-        showCloseButton: true,
-        customClass: { popup: 'info-popup' }
-      });
-    }
+        Swal.fire({
+          html: html,
+          width: 950,
+          background: "#141821",
+          color: "#fff",
+          showConfirmButton: false,
+          showCloseButton: true,
+          customClass: { popup: "info-popup" },
+        });
+      }
 
-    // ===============================
-    // Pintar cards reutilizable
-    // ===============================
-    function displayGames(containerId, games, mode) {
-      const container = document.getElementById(containerId);
-      container.innerHTML = "";
+      // ===============================
+      // Pintar cards reutilizable
+      // ===============================
+      function displayGames(containerId, games, mode) {
+        const container = document.getElementById(containerId);
+        container.innerHTML = "";
 
-      if (!Array.isArray(games)) return;
+        if (!Array.isArray(games)) return;
 
-      if (games.length === 0) {
-        if (mode === "library") {
-          container.innerHTML = `
+        if (games.length === 0) {
+          if (mode === "library") {
+            container.innerHTML = `
             <div class="empty-state">
               <p class="empty-title">Todavía no tienes juegos en tu biblioteca.</p>
               <p class="empty-text">Busca juegos en la sección de populares y añádelos a tu biblioteca.</p>
@@ -505,11 +562,11 @@
               </button>
             </div>
           `;
-          return;
-        }
+            return;
+          }
 
-        if (mode === "completed") {
-          container.innerHTML = `
+          if (mode === "completed") {
+            container.innerHTML = `
             <div class="empty-state">
               <p class="empty-title">Aún no has completado ningún juego.</p>
               <p class="empty-text">Es hora de jugar. Cuando termines un juego podrás marcarlo como pasado.</p>
@@ -518,43 +575,45 @@
               </button>
             </div>
           `;
-          return;
-        }
-      }
-
-      games.forEach(game => {
-        const div = document.createElement("div");
-        div.className = "game-card";
-
-        const name = game.name || "Sin nombre";
-        const safeAttrName = name.replace(/"/g, "&quot;");
-
-        const coverUrl =
-          game.coverUrl ||
-          (game.cover && game.cover.image_id
-            ? `https://images.igdb.com/igdb/image/upload/t_cover_big/${game.cover.image_id}.jpg`
-            : "assets/no-cover.png");
-
-        let buttonsHtml = "";
-
-        if (mode === "add") {
-          const index = gamesTemp.length;
-          gamesTemp.push(game);
-
-          if (libraryIds.has(game.id)) {
-            buttonsHtml = `<span class="badge-owned">En tu biblioteca</span>`;
-          } else {
-            buttonsHtml = `<button class="primary add-btn" data-index='${index}'>Agregar a biblioteca</button>`;
+            return;
           }
-        } else if (mode === "library") {
-          const hasExe = !!game.executable;
-          const exeStatus = hasExe
-            ? `<button class="linked-btn" onclick="confirmUnlink('${game.id}')">Vinculado</button>`
-            : `<button onclick="setExecutable('${game.id}')">Vincular</button>`;
-          const playButton = hasExe ? `<button class="primary" onclick="launchGame('${game.id}')">Jugar</button>` : '';
+        }
 
-          // Dropdown para biblioteca
-          buttonsHtml = `
+        games.forEach((game) => {
+          const div = document.createElement("div");
+          div.className = "game-card";
+
+          const name = game.name || "Sin nombre";
+          const safeAttrName = name.replace(/"/g, "&quot;");
+
+          const coverUrl =
+            game.coverUrl ||
+            (game.cover && game.cover.image_id
+              ? `https://images.igdb.com/igdb/image/upload/t_cover_big/${game.cover.image_id}.jpg`
+              : "assets/no-cover.png");
+
+          let buttonsHtml = "";
+
+          if (mode === "add") {
+            const index = gamesTemp.length;
+            gamesTemp.push(game);
+
+            if (libraryIds.has(game.id)) {
+              buttonsHtml = `<span class="badge-owned">En tu biblioteca</span>`;
+            } else {
+              buttonsHtml = `<button class="primary add-btn" data-index='${index}'>Agregar a biblioteca</button>`;
+            }
+          } else if (mode === "library") {
+            const hasExe = !!game.executable;
+            const exeStatus = hasExe
+              ? `<button class="linked-btn" onclick="confirmUnlink('${game.id}')">Vinculado</button>`
+              : `<button onclick="setExecutable('${game.id}')">Vincular</button>`;
+            const playButton = hasExe
+              ? `<button class="primary" onclick="launchGame('${game.id}')">Jugar</button>`
+              : "";
+
+            // Dropdown para biblioteca
+            buttonsHtml = `
             ${exeStatus}
             ${playButton}
             <div class="action-menu">
@@ -567,22 +626,28 @@
               </div>
             </div>
           `;
-        } else if (mode === "completed") {
-          const hasExe = !!game.executable;
-          const exeStatus = hasExe
-            ? `<button class="linked-btn" onclick="confirmUnlink('${game.id}')">Vinculado</button>`
-            : `<button onclick="setExecutable('${game.id}')">Vincular</button>`;
-          const playButton = hasExe ? `<button class="primary" onclick="launchGame('${game.id}')">Jugar</button>` : '';
+          } else if (mode === "completed") {
+            const hasExe = !!game.executable;
+            const exeStatus = hasExe
+              ? `<button class="linked-btn" onclick="confirmUnlink('${game.id}')">Vinculado</button>`
+              : `<button onclick="setExecutable('${game.id}')">Vincular</button>`;
+            const playButton = hasExe
+              ? `<button class="primary" onclick="launchGame('${game.id}')">Jugar</button>`
+              : "";
 
-          // Platino logic
-          const platText = game.isPlatinum ? "Desmarcar Platino" : "Marcar Platino 👑";
-          if (game.isPlatinum) {
-            div.classList.add("platinum-card");
-          }
-          const crownHtml = game.isPlatinum ? `<div class="platinum-crown">👑</div>` : '';
+            // Platino logic
+            const platText = game.isPlatinum
+              ? "Desmarcar Platino"
+              : "Marcar Platino 👑";
+            if (game.isPlatinum) {
+              div.classList.add("platinum-card");
+            }
+            const crownHtml = game.isPlatinum
+              ? `<div class="platinum-crown">👑</div>`
+              : "";
 
-          // Dropdown para completados
-          buttonsHtml = `
+            // Dropdown para completados
+            buttonsHtml = `
             ${crownHtml}
             ${exeStatus}
             ${playButton}
@@ -597,148 +662,165 @@
               </div>
             </div>
           `;
-        }
+          }
 
-        div.innerHTML = `
+          div.innerHTML = `
           <img src="${coverUrl}" alt="${safeAttrName}">
           <h3>${name}</h3>
           <div class="card-actions">${buttonsHtml}</div>
         `;
 
-        container.appendChild(div);
+          container.appendChild(div);
+        });
+      }
+
+      document.addEventListener("click", (e) => {
+        if (e.target.classList.contains("add-btn")) {
+          const idx = Number(e.target.dataset.index);
+          if (gamesTemp[idx]) addFromJson(gamesTemp[idx]);
+        }
       });
-    }
 
-    document.addEventListener('click', e => {
-      if (e.target.classList.contains('add-btn')) {
-        const idx = Number(e.target.dataset.index);
-        if (gamesTemp[idx]) addFromJson(gamesTemp[idx]);
-      }
-    });
-
-    // ===============================
-    // Notificaciones
-    // ===============================
-    function showNotification(message, type = 'success') {
-      const container = document.getElementById('notification-container');
-      const notification = document.createElement('div');
-      notification.className = `notification ${type}`;
-      notification.innerText = message;
-      container.appendChild(notification);
-      setTimeout(() => notification.remove(), 3000);
-    }
-
-    // ===============================
-    // Filtro biblioteca
-    // ===============================
-    function toggleLinkedFilter() {
-      showOnlyLinked = !showOnlyLinked;
-      localStorage.setItem("libraryLinkedFilter", showOnlyLinked);
-      applyLibraryFilter();
-      updateGamepadFocus(true);
-    }
-
-    function applyLibraryFilter() {
-      const btn = document.getElementById("linkedFilterBtn");
-      btn.classList.toggle("active", showOnlyLinked);
-
-      let gamesToShow = libraryGamesCache;
-      if (showOnlyLinked) gamesToShow = libraryGamesCache.filter(g => !!g.executable);
-
-      const title = document.getElementById("libraryTitle");
-      title.textContent = `Juegos (${gamesToShow.length})`;
-
-      displayGames("libraryList", gamesToShow, "library");
-    }
-
-    async function confirmUnlink(id) {
-      const ok = confirm("¿Quieres desvincular el ejecutable de este juego?");
-      if (!ok) return;
-
-      try {
-        await window.electronAPI.unlinkExecutable(id);
-        await loadLibrary();
-        refreshSearchUI();
-        showNotification("Ejecutable desvinculado correctamente.");
-      } catch (err) {
-        console.error(err);
-        showNotification("Error al desvincular el ejecutable.", "error");
-      }
-    }
-
-    async function openSortKeyEditor(id) {
-      let game = libraryGamesCache.find(g => String(g.id) === String(id));
-      if(!game) {
-        const { games, completedGames } = await window.electronAPI.getGames();
-        game = games.find(g => String(g.id) === String(id)) || completedGames.find(g => String(g.id) === String(id));
+      // ===============================
+      // Notificaciones
+      // ===============================
+      function showNotification(message, type = "success") {
+        const container = document.getElementById("notification-container");
+        const notification = document.createElement("div");
+        notification.className = `notification ${type}`;
+        notification.innerText = message;
+        container.appendChild(notification);
+        setTimeout(() => notification.remove(), 3000);
       }
 
-      if (!game) {
-        showNotification('No se encontró el juego.', 'error');
-        return;
+      // ===============================
+      // Filtro biblioteca
+      // ===============================
+      function toggleLinkedFilter() {
+        showOnlyLinked = !showOnlyLinked;
+        localStorage.setItem("libraryLinkedFilter", showOnlyLinked);
+        applyLibraryFilter();
+        updateGamepadFocus(true);
       }
 
-      const name = game.name || 'Sin nombre';
-      const currentSortKey = game.sortKey || name;
+      function applyLibraryFilter() {
+        const btn = document.getElementById("linkedFilterBtn");
+        btn.classList.toggle("active", showOnlyLinked);
 
-      const coverUrl =
-        game.coverUrl ||
-        (game.cover && game.cover.image_id
-          ? `https://images.igdb.com/igdb/image/upload/t_cover_big/${game.cover.image_id}.jpg`
-          : "assets/no-cover.png");
+        let gamesToShow = libraryGamesCache;
+        if (showOnlyLinked)
+          gamesToShow = libraryGamesCache.filter((g) => !!g.executable);
 
-      const { value: newSortKey } = await Swal.fire({
-        background: '#141821',
-        color: '#fff',
-        title: 'Nombre para ordenar',
-        html: `
+        const title = document.getElementById("libraryTitle");
+        title.textContent = `Juegos (${gamesToShow.length})`;
+
+        displayGames("libraryList", gamesToShow, "library");
+      }
+
+      async function confirmUnlink(id) {
+        const ok = confirm("¿Quieres desvincular el ejecutable de este juego?");
+        if (!ok) return;
+
+        try {
+          await window.electronAPI.unlinkExecutable(id);
+          await loadLibrary();
+          refreshSearchUI();
+          showNotification("Ejecutable desvinculado correctamente.");
+        } catch (err) {
+          console.error(err);
+          showNotification("Error al desvincular el ejecutable.", "error");
+        }
+      }
+
+      async function openSortKeyEditor(id) {
+        let game = libraryGamesCache.find((g) => String(g.id) === String(id));
+        if (!game) {
+          const { games, completedGames } = await window.electronAPI.getGames();
+          game =
+            games.find((g) => String(g.id) === String(id)) ||
+            completedGames.find((g) => String(g.id) === String(id));
+        }
+
+        if (!game) {
+          showNotification("No se encontró el juego.", "error");
+          return;
+        }
+
+        const name = game.name || "Sin nombre";
+        const currentSortKey = game.sortKey || name;
+
+        const coverUrl =
+          game.coverUrl ||
+          (game.cover && game.cover.image_id
+            ? `https://images.igdb.com/igdb/image/upload/t_cover_big/${game.cover.image_id}.jpg`
+            : "assets/no-cover.png");
+
+        const { value: newSortKey } = await Swal.fire({
+          background: "#141821",
+          color: "#fff",
+          title: "Nombre para ordenar",
+          html: `
           <div class="sortkey-modal">
             <img src="${coverUrl}" alt="${name}" class="sortkey-cover">
             <p>${name}</p>
           </div>
         `,
-        input: 'text',
-        inputLabel: 'Texto usado para ordenar en la biblioteca',
-        inputValue: currentSortKey,
-        showCancelButton: true,
-        confirmButtonText: 'Guardar',
-        cancelButtonText: 'Cancelar'
-      });
+          input: "text",
+          inputLabel: "Texto usado para ordenar en la biblioteca",
+          inputValue: currentSortKey,
+          showCancelButton: true,
+          confirmButtonText: "Guardar",
+          cancelButtonText: "Cancelar",
+        });
 
-      if (newSortKey === undefined) return;
+        if (newSortKey === undefined) return;
 
-      try {
-        await window.electronAPI.updateSortKey(id, newSortKey);
-        await loadLibrary();
-        showNotification('Orden actualizado correctamente.');
-      } catch (err) {
-        console.error(err);
-        showNotification('Error al actualizar el orden.', 'error');
+        try {
+          await window.electronAPI.updateSortKey(id, newSortKey);
+          await loadLibrary();
+          showNotification("Orden actualizado correctamente.");
+        } catch (err) {
+          console.error(err);
+          showNotification("Error al actualizar el orden.", "error");
+        }
       }
-    }
 
-    // ===============================
-    // Import modal (sin cambios funcionales)
-    // ===============================
-    async function openImportModal() {
-      const state = {
-        steamRoot: null,
-        epicManifestsDir: null,
-        epicDatDir: null,
-        gogRoot: null,
-        noneRoot: null
-      };
+      // ===============================
+      // Import modal (sin cambios funcionales)
+      // ===============================
+      async function openImportModal() {
+        const state = {
+          steamRoot: null,
+          epicManifestsDir: null,
+          epicDatDir: null,
+          gogRoot: null,
+          noneRoot: null,
+        };
 
-      const esc = (s) => (s ? String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;') : '');
+        const esc = (s) =>
+          s
+            ? String(s)
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+            : "";
 
-      function row(title, value, btnId, hint) {
-        return `
+        function row(title, value, btnId, hint) {
+          return `
           <div style="padding:10px; border:1px solid rgba(255,255,255,.08); border-radius:10px;">
             <div style="display:flex; justify-content:space-between; gap:10px; align-items:center;">
               <div>
                 <div><b>${title}</b></div>
-                <div style="font-size:12px; opacity:.85; margin-top:6px">${esc(value || '(no seleccionado / auto)')}</div>
-                ${hint ? `<div style="font-size:12px; opacity:.7; margin-top:6px">${esc(hint)}</div>` : ''}
+                <div style="font-size:12px; opacity:.85; margin-top:6px">${esc(
+                  value || "(no seleccionado / auto)"
+                )}</div>
+                ${
+                  hint
+                    ? `<div style="font-size:12px; opacity:.7; margin-top:6px">${esc(
+                        hint
+                      )}</div>`
+                    : ""
+                }
               </div>
               <div>
                 <button type="button" id="${btnId}" class="swal2-confirm swal2-styled" style="margin:0;">Seleccionar</button>
@@ -746,254 +828,334 @@
             </div>
           </div>
         `;
-      }
+        }
 
-      function render() {
-        return `
+        function render() {
+          return `
           <div style="text-align:left; display:grid; gap:10px;">
-            ${row('Steam', state.steamRoot, 'pickSteam', 'Carpeta raíz de Steam (donde está steam.exe)')}
-            ${row('Epic', state.epicManifestsDir, 'pickEpic', 'Normalmente: C:\\ProgramData\\Epic\\EpicGamesLauncher\\Data\\Manifests')}
-            ${row('GOG (carpeta juegos)', state.gogRoot, 'pickGog', 'Carpeta con subcarpetas (cada subcarpeta = 1 juego)')}
-            ${row('Sin plataforma (pirata)', state.noneRoot, 'pickNone', 'Carpeta con subcarpetas (cada subcarpeta = 1 juego)')}
-            ${row('Epic LauncherInstalled.dat (opcional)', state.epicDatDir, 'pickEpicDat', 'Normalmente: C:\\ProgramData\\Epic\\UnrealEngineLauncher')}
+            ${row(
+              "Steam",
+              state.steamRoot,
+              "pickSteam",
+              "Carpeta raíz de Steam (donde está steam.exe)"
+            )}
+            ${row(
+              "Epic",
+              state.epicManifestsDir,
+              "pickEpic",
+              "Normalmente: C:\\ProgramData\\Epic\\EpicGamesLauncher\\Data\\Manifests"
+            )}
+            ${row(
+              "GOG (carpeta juegos)",
+              state.gogRoot,
+              "pickGog",
+              "Carpeta con subcarpetas (cada subcarpeta = 1 juego)"
+            )}
+            ${row(
+              "Sin plataforma (pirata)",
+              state.noneRoot,
+              "pickNone",
+              "Carpeta con subcarpetas (cada subcarpeta = 1 juego)"
+            )}
+            ${row(
+              "Epic LauncherInstalled.dat (opcional)",
+              state.epicDatDir,
+              "pickEpicDat",
+              "Normalmente: C:\\ProgramData\\Epic\\UnrealEngineLauncher"
+            )}
             <div style="font-size:12px; opacity:.75">
               Nota: Steam/Epic intentan detectar instalados por manifests. GOG/Sin plataforma importan cada subcarpeta como juego y buscan el .exe.
             </div>
           </div>
         `;
-      }
+        }
 
-      function bindButtons() {
-        const popup = Swal.getPopup();
-        if (!popup) return;
+        function bindButtons() {
+          const popup = Swal.getPopup();
+          if (!popup) return;
 
-        const bind = (id, handler) => {
-          const el = popup.querySelector('#' + id);
-          if (!el) return;
-          el.onclick = handler;
+          const bind = (id, handler) => {
+            const el = popup.querySelector("#" + id);
+            if (!el) return;
+            el.onclick = handler;
+          };
+
+          bind("pickSteam", async () => {
+            const res = await window.electronAPI.openDirectoryDialog({
+              title: "Selecciona la carpeta raíz de Steam",
+            });
+            if (!res.canceled) state.steamRoot = res.dirPath;
+            Swal.update({ html: render() });
+          });
+
+          bind("pickEpic", async () => {
+            const res = await window.electronAPI.openDirectoryDialog({
+              title: "Selecciona la carpeta Manifests de Epic",
+            });
+            if (!res.canceled) state.epicManifestsDir = res.dirPath;
+            Swal.update({ html: render() });
+          });
+
+          bind("pickEpicDat", async () => {
+            const res = await window.electronAPI.openDirectoryDialog({
+              title: "Selecciona la carpeta donde está LauncherInstalled.dat",
+            });
+            if (!res.canceled) state.epicDatDir = res.dirPath;
+            Swal.update({ html: render() });
+          });
+
+          bind("pickGog", async () => {
+            const res = await window.electronAPI.openDirectoryDialog({
+              title: "Selecciona la carpeta donde están los juegos de GOG",
+            });
+            if (!res.canceled) state.gogRoot = res.dirPath;
+            Swal.update({ html: render() });
+          });
+
+          bind("pickNone", async () => {
+            const res = await window.electronAPI.openDirectoryDialog({
+              title: "Selecciona la carpeta de juegos sin plataforma (pirata)",
+            });
+            if (!res.canceled) state.noneRoot = res.dirPath;
+            Swal.update({ html: render() });
+          });
+        }
+
+        const result = await Swal.fire({
+          background: "#141821",
+          color: "#fff",
+          title: "Importar juegos instalados",
+          width: 760,
+          html: render(),
+          showCancelButton: true,
+          confirmButtonText: "Importar",
+          cancelButtonText: "Cancelar",
+          focusConfirm: false,
+          customClass: { popup: "import-popup" },
+          didRender: () => bindButtons(),
+        });
+
+        if (!result.isConfirmed) return;
+
+        const epicLauncherInstalledDat = state.epicDatDir
+          ? state.epicDatDir.replace(/\\+$/, "") + "\\LauncherInstalled.dat"
+          : null;
+
+        const payload = {
+          steamRoot: state.steamRoot,
+          epicManifestsDir: state.epicManifestsDir,
+          epicLauncherInstalledDat,
+          gogRoot: state.gogRoot,
+          noneRoot: state.noneRoot,
         };
 
-        bind('pickSteam', async () => {
-          const res = await window.electronAPI.openDirectoryDialog({ title: 'Selecciona la carpeta raíz de Steam' });
-          if (!res.canceled) state.steamRoot = res.dirPath;
-          Swal.update({ html: render() });
-        });
+        try {
+          Swal.fire({
+            background: "#141821",
+            color: "#fff",
+            title: "Importando...",
+            allowOutsideClick: false,
+            didOpen: () => Swal.showLoading(),
+          });
+          await window.electronAPI.importInstalledGames(payload);
 
-        bind('pickEpic', async () => {
-          const res = await window.electronAPI.openDirectoryDialog({ title: 'Selecciona la carpeta Manifests de Epic' });
-          if (!res.canceled) state.epicManifestsDir = res.dirPath;
-          Swal.update({ html: render() });
-        });
+          const enrich = await window.electronAPI.enrichCovers({ limit: 80 });
 
-        bind('pickEpicDat', async () => {
-          const res = await window.electronAPI.openDirectoryDialog({ title: 'Selecciona la carpeta donde está LauncherInstalled.dat' });
-          if (!res.canceled) state.epicDatDir = res.dirPath;
-          Swal.update({ html: render() });
-        });
+          await loadLibrary();
+          refreshSearchUI();
 
-        bind('pickGog', async () => {
-          const res = await window.electronAPI.openDirectoryDialog({ title: 'Selecciona la carpeta donde están los juegos de GOG' });
-          if (!res.canceled) state.gogRoot = res.dirPath;
-          Swal.update({ html: render() });
-        });
+          showNotification(
+            `Juegos: ${enrich?.updated ?? 0}/${enrich?.scanned ?? 0} importados`
+          );
 
-        bind('pickNone', async () => {
-          const res = await window.electronAPI.openDirectoryDialog({ title: 'Selecciona la carpeta de juegos sin plataforma (pirata)' });
-          if (!res.canceled) state.noneRoot = res.dirPath;
-          Swal.update({ html: render() });
-        });
+          Swal.fire({
+            background: "#141821",
+            color: "#fff",
+            icon: "success",
+            title: "Importación completada",
+            text: `Juegos importados correctamente: ${enrich?.updated ?? 0}/${
+              enrich?.scanned ?? 0
+            }`,
+          });
+        } catch (err) {
+          console.error(err);
+          Swal.fire({
+            background: "#141821",
+            color: "#fff",
+            icon: "error",
+            title: "Error importando",
+            text: String(err?.message || err),
+          });
+        }
       }
 
-      const result = await Swal.fire({
-        background: '#141821',
-        color: '#fff',
-        title: 'Importar juegos instalados',
-        width: 760,
-        html: render(),
-        showCancelButton: true,
-        confirmButtonText: 'Importar',
-        cancelButtonText: 'Cancelar',
-        focusConfirm: false,
-        customClass: { popup: 'import-popup' },
-        didRender: () => bindButtons()
-      });
-
-      if (!result.isConfirmed) return;
-
-      const epicLauncherInstalledDat = state.epicDatDir
-        ? (state.epicDatDir.replace(/\\+$/, '') + '\\LauncherInstalled.dat')
-        : null;
-
-      const payload = {
-        steamRoot: state.steamRoot,
-        epicManifestsDir: state.epicManifestsDir,
-        epicLauncherInstalledDat,
-        gogRoot: state.gogRoot,
-        noneRoot: state.noneRoot
-      };
-
-      try {
-        Swal.fire({ background: '#141821', color: '#fff', title: 'Importando...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
-        await window.electronAPI.importInstalledGames(payload);
-
-        const enrich = await window.electronAPI.enrichCovers({ limit: 80 });
-
-        await loadLibrary();
-        refreshSearchUI();
-
-        showNotification(`Juegos: ${enrich?.updated ?? 0}/${enrich?.scanned ?? 0} importados`);
-
-        Swal.fire({
-          background: '#141821',
-          color: '#fff',
-          icon: 'success',
-          title: 'Importación completada',
-          text: `Juegos importados correctamente: ${enrich?.updated ?? 0}/${enrich?.scanned ?? 0}`
+      // ===============================
+      // GAMEPAD: foco + acciones
+      // ===============================
+      function setupGamepad() {
+        window.addEventListener("gamepadconnected", (e) => {
+          activePadIndex = e.gamepad.index;
+          showNotification(`Mando conectado`, "success");
         });
-      } catch (err) {
-        console.error(err);
-        Swal.fire({ background: '#141821', color: '#fff', icon: 'error', title: 'Error importando', text: String(err?.message || err) });
-      }
-    }
 
-    // ===============================
-    // GAMEPAD: foco + acciones
-    // ===============================
-    function setupGamepad() {
-      window.addEventListener("gamepadconnected", (e) => {
-        activePadIndex = e.gamepad.index;
-        showNotification(`Mando conectado`, 'success');
-      });
+        window.addEventListener("gamepaddisconnected", (e) => {
+          if (activePadIndex === e.gamepad.index) activePadIndex = null;
+          showNotification(`Mando desconectado`, "error");
+        });
 
-      window.addEventListener("gamepaddisconnected", (e) => {
-        if (activePadIndex === e.gamepad.index) activePadIndex = null;
-        showNotification(`Mando desconectado`, 'error');
-      });
-
-      requestAnimationFrame(tickGamepad);
-    }
-
-    function getPad() {
-      const pads = navigator.getGamepads?.() || [];
-      if (activePadIndex != null && pads[activePadIndex]) return pads[activePadIndex];
-      return pads.find(Boolean) || null;
-    }
-
-    function edge(now, key) {
-      const fired = now && !gpLast[key];
-      gpLast[key] = now;
-      return fired;
-    }
-
-    function getCardsInActiveGrid() {
-      const secId = getActiveSectionId();
-      if (secId === "popular") return Array.from(document.querySelectorAll("#gamesList .game-card"));
-      if (secId === "library") return Array.from(document.querySelectorAll("#libraryList .game-card"));
-      if (secId === "completed") return Array.from(document.querySelectorAll("#completedList .game-card"));
-      return [];
-    }
-
-    function updateGamepadFocus(force = false) {
-      const cards = getCardsInActiveGrid();
-      cards.forEach(c => c.classList.remove("gp-focused"));
-
-      if (cards.length === 0) return;
-
-      if (focusedIndex < 0) focusedIndex = 0;
-      if (focusedIndex >= cards.length) focusedIndex = cards.length - 1;
-
-      const focused = cards[focusedIndex];
-      if (focused) {
-        focused.classList.add("gp-focused");
-        focused.scrollIntoView({ block: "nearest", inline: "nearest", behavior: force ? "auto" : "smooth" });
-      }
-    }
-
-    function getGridColumns() {
-      const w = window.innerWidth;
-      if (w <= 700) return 2;
-      if (w <= 1000) return 3;
-      if (w <= 1400) return 4;
-      return 6;
-    }
-
-    function clickPrimaryActionOnFocused() {
-      const cards = getCardsInActiveGrid();
-      const card = cards[focusedIndex];
-      if (!card) return;
-
-      // Prioridad: botón primary (Jugar/Agregar)
-      const primary = card.querySelector("button.primary");
-      if (primary) return primary.click();
-
-      // Si no hay primary, click al primer button normal
-      const anyBtn = card.querySelector("button");
-      if (anyBtn) return anyBtn.click();
-    }
-
-    function backAction() {
-      const popup = Swal.getPopup?.();
-      if (popup) {
-        Swal.close();
-        return;
+        requestAnimationFrame(tickGamepad);
       }
 
-      // Volver a biblioteca como acción "atrás" sencilla
-      showSection('library', document.querySelector('.sidebar li:nth-child(2)'));
-    }
+      function getPad() {
+        const pads = navigator.getGamepads?.() || [];
+        if (activePadIndex != null && pads[activePadIndex])
+          return pads[activePadIndex];
+        return pads.find(Boolean) || null;
+      }
 
-    function switchSection(delta) {
-      const items = Array.from(document.querySelectorAll(".sidebar li"));
-      const activeIdx = items.findIndex(li => li.classList.contains("active"));
-      if (activeIdx < 0) return;
-      let next = activeIdx + delta;
-      if (next < 0) next = items.length - 1;
-      if (next >= items.length) next = 0;
-      items[next].click();
-    }
+      function edge(now, key) {
+        const fired = now && !gpLast[key];
+        gpLast[key] = now;
+        return fired;
+      }
 
-    function tickGamepad() {
-      const gp = getPad();
+      function getCardsInActiveGrid() {
+        const secId = getActiveSectionId();
+        if (secId === "popular")
+          return Array.from(document.querySelectorAll("#gamesList .game-card"));
+        if (secId === "library")
+          return Array.from(
+            document.querySelectorAll("#libraryList .game-card")
+          );
+        if (secId === "completed")
+          return Array.from(
+            document.querySelectorAll("#completedList .game-card")
+          );
+        return [];
+      }
 
-      if (gp) {
-        const up = !!gp.buttons[12]?.pressed || (gp.axes?.[1] ?? 0) < -0.6;
-        const down = !!gp.buttons[13]?.pressed || (gp.axes?.[1] ?? 0) > 0.6;
-        const left = !!gp.buttons[14]?.pressed || (gp.axes?.[0] ?? 0) < -0.6;
-        const right = !!gp.buttons[15]?.pressed || (gp.axes?.[0] ?? 0) > 0.6;
+      function updateGamepadFocus(force = false) {
+        const cards = getCardsInActiveGrid();
+        cards.forEach((c) => c.classList.remove("gp-focused"));
 
-        const a = !!gp.buttons[0]?.pressed; // A / Cross
-        const b = !!gp.buttons[1]?.pressed; // B / Circle
-        const x = !!gp.buttons[2]?.pressed;
-        const y = !!gp.buttons[3]?.pressed;
-        const lb = !!gp.buttons[4]?.pressed;
-        const rb = !!gp.buttons[5]?.pressed;
+        if (cards.length === 0) return;
 
-        const cols = getGridColumns();
+        if (focusedIndex < 0) focusedIndex = 0;
+        if (focusedIndex >= cards.length) focusedIndex = cards.length - 1;
 
-        if (edge(up, "up")) { focusedIndex -= cols; updateGamepadFocus(); }
-        if (edge(down, "down")) { focusedIndex += cols; updateGamepadFocus(); }
-        if (edge(left, "left")) { focusedIndex -= 1; updateGamepadFocus(); }
-        if (edge(right, "right")) { focusedIndex += 1; updateGamepadFocus(); }
+        const focused = cards[focusedIndex];
+        if (focused) {
+          focused.classList.add("gp-focused");
+          focused.scrollIntoView({
+            block: "nearest",
+            inline: "nearest",
+            behavior: force ? "auto" : "smooth",
+          });
+        }
+      }
 
-        if (edge(a, "a")) clickPrimaryActionOnFocused();
-        if (edge(b, "b")) backAction();
+      function getGridColumns() {
+        const w = window.innerWidth;
+        if (w <= 700) return 2;
+        if (w <= 1000) return 3;
+        if (w <= 1400) return 4;
+        return 6;
+      }
 
-        if (edge(lb, "lb")) switchSection(-1);
-        if (edge(rb, "rb")) switchSection(+1);
+      function clickPrimaryActionOnFocused() {
+        const cards = getCardsInActiveGrid();
+        const card = cards[focusedIndex];
+        if (!card) return;
 
-        if (edge(x, "x")) {
-          if (getActiveSectionId() === "library") toggleLinkedFilter();
+        // Prioridad: botón primary (Jugar/Agregar)
+        const primary = card.querySelector("button.primary");
+        if (primary) return primary.click();
+
+        // Si no hay primary, click al primer button normal
+        const anyBtn = card.querySelector("button");
+        if (anyBtn) return anyBtn.click();
+      }
+
+      function backAction() {
+        const popup = Swal.getPopup?.();
+        if (popup) {
+          Swal.close();
+          return;
         }
 
-        if (edge(y, "y")) {
-          if (getActiveSectionId() === "popular") {
-            document.getElementById("searchInput")?.focus();
+        // Volver a biblioteca como acción "atrás" sencilla
+        showSection(
+          "library",
+          document.querySelector(".sidebar li:nth-child(2)")
+        );
+      }
+
+      function switchSection(delta) {
+        const items = Array.from(document.querySelectorAll(".sidebar li"));
+        const activeIdx = items.findIndex((li) =>
+          li.classList.contains("active")
+        );
+        if (activeIdx < 0) return;
+        let next = activeIdx + delta;
+        if (next < 0) next = items.length - 1;
+        if (next >= items.length) next = 0;
+        items[next].click();
+      }
+
+      function tickGamepad() {
+        const gp = getPad();
+
+        if (gp) {
+          const up = !!gp.buttons[12]?.pressed || (gp.axes?.[1] ?? 0) < -0.6;
+          const down = !!gp.buttons[13]?.pressed || (gp.axes?.[1] ?? 0) > 0.6;
+          const left = !!gp.buttons[14]?.pressed || (gp.axes?.[0] ?? 0) < -0.6;
+          const right = !!gp.buttons[15]?.pressed || (gp.axes?.[0] ?? 0) > 0.6;
+
+          const a = !!gp.buttons[0]?.pressed; // A / Cross
+          const b = !!gp.buttons[1]?.pressed; // B / Circle
+          const x = !!gp.buttons[2]?.pressed;
+          const y = !!gp.buttons[3]?.pressed;
+          const lb = !!gp.buttons[4]?.pressed;
+          const rb = !!gp.buttons[5]?.pressed;
+
+          const cols = getGridColumns();
+
+          if (edge(up, "up")) {
+            focusedIndex -= cols;
+            updateGamepadFocus();
+          }
+          if (edge(down, "down")) {
+            focusedIndex += cols;
+            updateGamepadFocus();
+          }
+          if (edge(left, "left")) {
+            focusedIndex -= 1;
+            updateGamepadFocus();
+          }
+          if (edge(right, "right")) {
+            focusedIndex += 1;
+            updateGamepadFocus();
+          }
+
+          if (edge(a, "a")) clickPrimaryActionOnFocused();
+          if (edge(b, "b")) backAction();
+
+          if (edge(lb, "lb")) switchSection(-1);
+          if (edge(rb, "rb")) switchSection(+1);
+
+          if (edge(x, "x")) {
+            if (getActiveSectionId() === "library") toggleLinkedFilter();
+          }
+
+          if (edge(y, "y")) {
+            if (getActiveSectionId() === "popular") {
+              document.getElementById("searchInput")?.focus();
+            }
           }
         }
-      }
 
-      requestAnimationFrame(tickGamepad);
-    }
-  </script>
-</body>
+        requestAnimationFrame(tickGamepad);
+      }
+    </script>
+  </body>
 </html>
